@@ -8,6 +8,8 @@ import { GoogleMapsScraper } from "@/lib/scrapers/google-maps-scraper";
 import type { ScrapingJobData } from "@/lib/queues/scraping-queue";
 import type { EnrichmentJobData } from "@/lib/queues/enrichment-queue";
 import { processEnrichmentJob } from "@/lib/workers/enrichment-worker";
+import type { EmailJobData } from "@/lib/queues/email-queue";
+import { processEmailJob } from "@/lib/workers/email-worker";
 
 const redisConnection = createRedisClient();
 
@@ -155,13 +157,29 @@ enrichmentWorker.on("failed", (job, err) => {
   console.error(`❌ Enrichment ${job?.id} failed:`, err);
 });
 
-console.log("🚀 Worker server started - listening for scraping + enrichment jobs");
+// Email worker
+const emailWorker = new Worker<EmailJobData>(
+  "email",
+  processEmailJob,
+  { connection: createRedisClient() }
+);
+
+emailWorker.on("completed", (job) => {
+  console.log(`✅ Email ${job.id} sent`);
+});
+
+emailWorker.on("failed", (job, err) => {
+  console.error(`❌ Email ${job?.id} failed:`, err);
+});
+
+console.log("🚀 Worker server started - listening for scraping + enrichment + email jobs");
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   console.log("Shutting down workers...");
   await scrapingWorker.close();
   await enrichmentWorker.close();
+  await emailWorker.close();
   await redisConnection.quit();
   process.exit(0);
 });

@@ -325,9 +325,9 @@ curl -X POST http://localhost:3000/api/prospects/[id]/enrich
 | Phase | Duration | Status |
 |-------|----------|--------|
 | 1-3 (Foundation) | 7 days | ✅ Done |
-| 4 (Enrichment) | 2-3 days | 🔄 Next |
-| 5 (Email) | 3-4 days | ⏳ Pending |
-| 6 (Team) | 1-2 days | ⏳ Pending |
+| 4 (Enrichment) | 2-3 days | ✅ Done |
+| 5 (Email) | 3-4 days | ✅ Done |
+| 6 (Team) | 1-2 days | 🔄 Next |
 | 7 (Polish) | 2-3 days | ⏳ Pending |
 | **Total** | **~17-20 days** | |
 

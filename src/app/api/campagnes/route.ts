@@ -1,0 +1,104 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth-helpers";
+import { z } from "zod";
+
+const createCampaignSchema = z.object({
+  name: z.string().min(1, "Nom de campagne requis"),
+  subject: z.string().min(1, "Sujet requis"),
+  bodyHtml: z.string().min(1, "Corps du message requis"),
+  bodyText: z.string().optional(),
+  fromName: z.string().optional(),
+  fromEmail: z.string().email().optional(),
+  replyTo: z.string().email().optional(),
+  emailsPerHour: z.number().int().min(1).max(500).default(50),
+  leadIds: z.array(z.string()).optional(),
+});
+
+// GET — list campaigns for the workspace
+export async function GET(req: NextRequest) {
+  const { error, session } = await requireAuth();
+  if (error || !session) return error;
+
+  const workspaceId = session.user.workspaceId;
+  if (!workspaceId) {
+    return NextResponse.json({ error: "Aucun workspace trouvé" }, { status: 400 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get("status") || undefined;
+
+  const campaigns = await prisma.campaign.findMany({
+    where: {
+      workspaceId,
+      ...(status && { status: status as any }),
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      _count: {
+        select: { campaignLeads: true },
+      },
+    },
+  });
+
+  return NextResponse.json({ campaigns });
+}
+
+// POST — create a new campaign
+export async function POST(req: NextRequest) {
+  const { error, session } = await requireAuth();
+  if (error || !session) return error;
+
+  const workspaceId = session.user.workspaceId;
+  if (!workspaceId) {
+    return NextResponse.json({ error: "Aucun workspace trouvé" }, { status: 400 });
+  }
+
+  try {
+    const body = await req.json();
+    const parsed = createCampaignSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
+    const { leadIds, ...campaignData } = parsed.data;
+
+    const campaign = await prisma.campaign.create({
+      data: {
+        ...campaignData,
+        workspaceId,
+      },
+    });
+
+    // Attach leads to the campaign if provided
+    if (leadIds && leadIds.length > 0) {
+      // Validate leads belong to workspace
+      const leads = await prisma.lead.findMany({
+        where: { id: { in: leadIds }, workspaceId },
+        select: { id: true },
+      });
+
+      await prisma.campaignLead.createMany({
+        data: leads.map((lead) => ({
+          campaignId: campaign.id,
+          leadId: lead.id,
+        })),
+        skipDuplicates: true,
+      });
+
+      await prisma.campaign.update({
+        where: { id: campaign.id },
+        data: { totalRecipients: leads.length },
+      });
+    }
+
+    return NextResponse.json(campaign, { status: 201 });
+  } catch (err) {
+    console.error("[CAMPAIGN_CREATE]", err);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
