@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, logActivity } from "@/lib/auth-helpers";
 import { WorkspaceRole } from "@prisma/client";
 import { z } from "zod";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 const inviteSchema = z.object({
   email: z.string().email("Email invalide"),
@@ -17,6 +18,10 @@ export async function POST(req: NextRequest) {
   if (!workspaceId) {
     return NextResponse.json({ error: "Aucun workspace trouvé" }, { status: 400 });
   }
+
+  // Rate limit: 10 invitations per workspace per hour
+  const rl = await rateLimit({ key: `invite:${workspaceId}`, limit: 10, duration: 3600 });
+  if (!rl.success) return rateLimitResponse(rl.limit, rl.remaining, rl.reset);
 
   // Check that the inviter is at least ADMIN
   const membership = await prisma.workspaceMember.findUnique({

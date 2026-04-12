@@ -3,6 +3,9 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { hashApiKey } from "./lib/api-keys";
 import { prisma } from "./lib/prisma";
+import { redis } from "./lib/redis";
+
+const API_KEY_CACHE_TTL = 300; // 5 minutes
 
 // Origins autorisées par défaut (dev)
 const DEFAULT_ALLOWED_ORIGINS = ["http://localhost:3000"];
@@ -56,16 +59,30 @@ export async function middleware(request: NextRequest) {
   if (authHeader?.startsWith("Bearer mmm_pk_")) {
     const key = authHeader.replace("Bearer ", "");
     const keyHash = hashApiKey(key);
+    const cacheKey = `apikey:${keyHash}`;
 
-    const apiKeyData = await prisma.apiKey.findUnique({
-      where: { keyHash },
-      select: { workspaceId: true, revokedAt: true, expiresAt: true }
-    });
+    // Try Redis cache first to avoid a DB hit on every request
+    const cached = await redis.get(cacheKey);
+    if (cached !== null) {
+      // "INVALID" is stored for keys that don't exist / are revoked
+      if (cached !== "INVALID") {
+        apiKeyWorkspaceId = cached;
+        response.headers.set("X-Workspace-Id", apiKeyWorkspaceId);
+      }
+    } else {
+      const apiKeyData = await prisma.apiKey.findUnique({
+        where: { keyHash },
+        select: { workspaceId: true, revokedAt: true, expiresAt: true }
+      });
 
-    if (apiKeyData && !apiKeyData.revokedAt && (!apiKeyData.expiresAt || apiKeyData.expiresAt > new Date())) {
-      apiKeyWorkspaceId = apiKeyData.workspaceId;
-      // Optionnel: On peut injecter le workspaceId dans les headers pour les routes API
-      response.headers.set("X-Workspace-Id", apiKeyWorkspaceId);
+      if (apiKeyData && !apiKeyData.revokedAt && (!apiKeyData.expiresAt || apiKeyData.expiresAt > new Date())) {
+        apiKeyWorkspaceId = apiKeyData.workspaceId;
+        response.headers.set("X-Workspace-Id", apiKeyWorkspaceId);
+        await redis.setex(cacheKey, API_KEY_CACHE_TTL, apiKeyWorkspaceId);
+      } else {
+        // Cache negative results too to prevent DB hammering with invalid keys
+        await redis.setex(cacheKey, API_KEY_CACHE_TTL, "INVALID");
+      }
     }
   }
 

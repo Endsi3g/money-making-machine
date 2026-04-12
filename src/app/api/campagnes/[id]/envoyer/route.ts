@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
 import { emailQueue } from "@/lib/queues/email-queue";
 import { getGmailStatus } from "@/lib/email/gmail-oauth";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const { error, session } = await requireAuth();
@@ -12,6 +13,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!workspaceId) {
     return NextResponse.json({ error: "Aucun workspace trouvé" }, { status: 400 });
   }
+
+  // Rate limit: 5 campaign launches per workspace per hour
+  const rl = await rateLimit({ key: `campaign-send:${workspaceId}`, limit: 5, duration: 3600 });
+  if (!rl.success) return rateLimitResponse(rl.limit, rl.remaining, rl.reset);
 
   // Verify Gmail is connected
   const gmailStatus = await getGmailStatus(workspaceId);

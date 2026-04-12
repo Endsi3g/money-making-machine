@@ -35,7 +35,7 @@ export function buildVariables(lead: {
 }
 
 export function renderTemplate(template: string, variables: TemplateVariables): string {
-  const compiled = Handlebars.compile(template, { noEscape: true });
+  const compiled = Handlebars.compile(template);
   return compiled(variables);
 }
 

@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +32,10 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   const workspaceId = session?.user?.workspaceId;
 
+  if (!workspaceId) {
+    redirect("/connexion");
+  }
+
   const [
     leadStats,
     sourceStats,
@@ -42,26 +47,26 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     prisma.lead.groupBy({
       by: ["status"],
-      where: { workspaceId: workspaceId ?? "" },
+      where: { workspaceId },
       _count: { id: true },
     }),
     prisma.lead.groupBy({
       by: ["source"],
-      where: { workspaceId: workspaceId ?? "" },
+      where: { workspaceId },
       _count: { id: true },
     }),
     prisma.scrapingJob.groupBy({
       by: ["status"],
-      where: { workspaceId: workspaceId ?? "" },
+      where: { workspaceId },
       _count: { id: true },
     }),
     prisma.campaign.groupBy({
       by: ["status"],
-      where: { workspaceId: workspaceId ?? "" },
+      where: { workspaceId },
       _count: { id: true },
     }),
     prisma.campaign.aggregate({
-      where: { workspaceId: workspaceId ?? "" },
+      where: { workspaceId },
       _sum: {
         totalSent: true,
         totalOpened: true,
@@ -70,12 +75,20 @@ export default async function DashboardPage() {
       },
     }),
     prisma.lead.findMany({
-      where: { workspaceId: workspaceId ?? "" },
+      where: { workspaceId },
       orderBy: { createdAt: "desc" },
       take: 5,
+      select: {
+        id: true,
+        businessName: true,
+        city: true,
+        status: true,
+        score: true,
+        createdAt: true,
+      },
     }),
     prisma.activityLog.findMany({
-      where: { workspaceId: workspaceId ?? "" },
+      where: { workspaceId },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: {

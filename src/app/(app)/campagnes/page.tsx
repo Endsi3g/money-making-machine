@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface Campaign {
@@ -68,10 +69,11 @@ export default function CampaignsPage() {
   async function fetchCampaigns() {
     try {
       const res  = await fetch("/api/campagnes");
+      if (!res.ok) throw new Error("Erreur serveur");
       const data = await res.json();
-      setCampaigns(data.campaigns);
+      setCampaigns(data.campaigns ?? []);
     } catch {
-      console.error("Failed to fetch campaigns");
+      toast.error("Impossible de charger les campagnes");
     } finally {
       setLoading(false);
     }
@@ -80,10 +82,12 @@ export default function CampaignsPage() {
   async function handleDelete(id: string) {
     if (!confirm("Supprimer cette campagne ?")) return;
     try {
-      await fetch(`/api/campagnes/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/campagnes/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Erreur serveur");
       setCampaigns((prev) => prev.filter((c) => c.id !== id));
+      toast.success("Campagne supprimée");
     } catch {
-      alert("Erreur lors de la suppression");
+      toast.error("Erreur lors de la suppression");
     }
   }
 

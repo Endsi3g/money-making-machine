@@ -2,7 +2,6 @@ import type { Job } from "bullmq";
 import { prisma } from "@/lib/prisma";
 import { analyzeWebsite } from "@/lib/enrichment/website-analyzer";
 import { enrichLeadWithOllama } from "@/lib/enrichment/ollama-client";
-import { scoreLead } from "@/lib/enrichment/lead-scorer";
 import type { EnrichmentJobData } from "@/lib/queues/enrichment-queue";
 
 export async function processEnrichmentJob(job: Job<EnrichmentJobData>): Promise<void> {
@@ -82,5 +81,5 @@ export async function processEnrichmentJob(job: Job<EnrichmentJobData>): Promise
     },
   });
 
-  console.log(`[ENRICHMENT] Lead ${leadId} enriched — score: ${score}, email: ${emailExtracted ?? "none"}`);
+  console.log(`[ENRICHMENT] Lead ${leadId} enriched — score: ${aggregatedScore}, email: ${emailExtracted ?? "none"}`);
 }

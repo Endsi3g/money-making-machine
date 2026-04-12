@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
 import { enrichmentQueue } from "@/lib/queues/enrichment-queue";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const { error, session } = await requireAuth();
@@ -11,6 +12,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!workspaceId) {
     return NextResponse.json({ error: "Aucun workspace trouvé" }, { status: 400 });
   }
+
+  // Rate limit: 50 enrichment triggers per workspace per hour
+  const rl = await rateLimit({ key: `enrich:${workspaceId}`, limit: 50, duration: 3600 });
+  if (!rl.success) return rateLimitResponse(rl.limit, rl.remaining, rl.reset);
 
   const lead = await prisma.lead.findFirst({
     where: { id: params.id, workspaceId },

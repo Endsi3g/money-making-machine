@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
 import { z } from "zod";
+import { CampaignStatus } from "@prisma/client";
 
 const createCampaignSchema = z.object({
   name: z.string().min(1, "Nom de campagne requis"),
@@ -30,12 +31,16 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status") || undefined;
+  const rawStatus = searchParams.get("status");
+  const validStatuses = Object.values(CampaignStatus) as string[];
+  const status = rawStatus && validStatuses.includes(rawStatus)
+    ? (rawStatus as CampaignStatus)
+    : undefined;
 
   const campaigns = await prisma.campaign.findMany({
     where: {
       workspaceId,
-      ...(status && { status: status as any }),
+      ...(status && { status }),
     },
     orderBy: { createdAt: "desc" },
     include: {
