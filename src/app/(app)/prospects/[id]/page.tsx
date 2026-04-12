@@ -50,19 +50,19 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 pb-6 border-b border-border/30 mb-6">
         <div className="flex items-start gap-3">
-          <Button variant="ghost" size="icon" asChild>
+          <Button variant="outline" size="icon" className="rounded-sm" asChild>
             <Link href="/prospects">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold">{lead.businessName}</h1>
+              <h1 className="text-2xl font-bold tracking-tight uppercase">{lead.businessName}</h1>
               <LeadStatusBadge status={lead.status} />
               {lead.category && (
-                <Badge variant="outline" className="font-normal">
+                <Badge variant="outline" className="font-mono text-[10px] tracking-widest uppercase">
                   {lead.category}
                 </Badge>
               )}
@@ -89,10 +89,10 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
 
         <div className="flex items-center gap-2">
           <EnrichButton leadId={lead.id} status={lead.status} />
-          <Button asChild>
+          <Button className="rounded-sm tracking-widest font-mono text-xs uppercase" asChild>
             <Link href={`/campagnes/nouvelle?leadId=${lead.id}`}>
-              <Mail className="h-4 w-4 mr-2" />
-              Envoyer email
+              <Mail className="h-3.5 w-3.5 mr-2" />
+              Email
             </Link>
           </Button>
         </div>
@@ -102,16 +102,16 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         {/* Left column */}
         <div className="col-span-2 space-y-4">
           <Tabs defaultValue="infos">
-            <TabsList>
-              <TabsTrigger value="infos">Informations</TabsTrigger>
-              <TabsTrigger value="ai">Enrichissement IA</TabsTrigger>
-              <TabsTrigger value="emails">Emails ({lead.campaignLeads.length})</TabsTrigger>
+            <TabsList className="bg-transparent border-b border-border/30 w-full justify-start rounded-none p-0 h-auto gap-6 mb-4">
+              <TabsTrigger value="infos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 py-3 font-mono text-[10px] uppercase tracking-widest">INFOS SYSTEME</TabsTrigger>
+              <TabsTrigger value="ai" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 py-3 font-mono text-[10px] uppercase tracking-widest flex items-center gap-2"><Sparkles className="h-3 w-3" />INTELLIGENCE ARTIFICIELLE</TabsTrigger>
+              <TabsTrigger value="emails" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 py-3 font-mono text-[10px] uppercase tracking-widest">LOGS EMAILS ({lead.campaignLeads.length})</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="infos" className="space-y-4 mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Coordonnées</CardTitle>
+            <TabsContent value="infos" className="space-y-4 mt-0">
+              <Card className="border-border/50 bg-card/50 shadow-none">
+                <CardHeader className="border-b border-border/10 pb-3">
+                  <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground">Coordonnées Réseau</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {lead.phone && (
@@ -318,11 +318,10 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
           </Tabs>
         </div>
 
-        {/* Right column */}
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Score</CardTitle>
+          <Card className="border-border/50 bg-card/50 shadow-none">
+            <CardHeader className="border-b border-border/10 pb-3">
+              <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground">Fit Score</CardTitle>
             </CardHeader>
             <CardContent>
               <LeadScoreIndicator score={lead.score} showLabel className="justify-center" />

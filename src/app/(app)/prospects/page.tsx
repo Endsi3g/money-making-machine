@@ -57,39 +57,38 @@ export default async function ProspectsPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex mb-6 items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Prospects</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {total.toLocaleString("fr-CA")} prospect{total !== 1 ? "s" : ""} au total
+          <h1 className="text-2xl font-bold tracking-tight uppercase">PROSPECTS</h1>
+          <p className="text-muted-foreground text-xs uppercase tracking-widest mt-1">
+            / {total.toLocaleString("fr-CA")} PROSPECT{total !== 1 ? "S" : ""} INDEXÉ{total !== 1 ? "S" : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="rounded-sm tracking-widest font-mono text-xs uppercase" asChild>
             <a href={`/api/prospects/export`} download>
-              <Download className="w-4 h-4 mr-2" />
-              Exporter CSV
+              <Download className="w-3.5 h-3.5 mr-2" />
+              CSV
             </a>
           </Button>
-          <Button size="sm" asChild>
+          <Button size="sm" className="rounded-sm tracking-widest font-mono text-xs uppercase" asChild>
             <Link href="/prospects/nouveau">
-              <Plus className="w-4 h-4 mr-2" />
-              Nouveau prospect
+              <Plus className="w-3.5 h-3.5 mr-2" />
+              Nouveau
             </Link>
           </Button>
         </div>
       </div>
 
       {/* Stats pills */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap mb-6">
         {stats.map((s) => (
           <div
             key={s.status}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs font-medium"
+            className="flex items-center gap-2 px-3 py-1.5 border border-border/50 bg-card/30 rounded-sm text-[10px] font-mono uppercase tracking-wider"
           >
-            <Users className="w-3 h-3" />
             <span className="text-muted-foreground">{s.status}:</span>
-            <span>{s._count.id}</span>
+            <span className="text-primary font-bold">{s._count.id}</span>
           </div>
         ))}
       </div>

@@ -66,15 +66,15 @@ export function Sidebar() {
         )}
       >
         {/* Logo */}
-        <div className={cn("flex items-center h-16 px-4 border-b", collapsed && "justify-center px-0")}>
+        <div className={cn("flex items-center h-14 px-4 border-b", collapsed && "justify-center px-0")}>
           <Link href="/tableau-de-bord" className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/30">
-              <DollarSign className="w-4 h-4 text-primary-foreground" />
+            <div className="w-7 h-7 rounded-[4px] bg-primary flex items-center justify-center shrink-0">
+              <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
             {!collapsed && (
-              <div className="min-w-0">
-                <div className="font-bold text-sm leading-tight truncate">Money Making</div>
-                <div className="text-xs text-muted-foreground leading-tight">Machine</div>
+              <div className="min-w-0 flex flex-col">
+                <div className="font-bold text-sm tracking-tight leading-none text-foreground uppercase">Aura B2B</div>
+                <div className="text-[10px] text-muted-foreground mt-1 uppercase tracking-widest leading-none">Cockpit</div>
               </div>
             )}
           </Link>

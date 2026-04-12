@@ -59,37 +59,37 @@ export default async function ScrapingPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Scraping</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {stats.totalLeads.toLocaleString("fr-CA")} leads récupérés au total
+          <h1 className="text-2xl font-bold tracking-tight uppercase">SCRAPING JOBS</h1>
+          <p className="text-muted-foreground text-xs uppercase tracking-widest mt-1">
+            / {stats.totalLeads.toLocaleString("fr-CA")} LEADS EXTRAITS
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="rounded-sm font-mono text-[10px] uppercase tracking-widest">
           <Link href="/scraping/nouveau">
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau scraping
+            <Plus className="h-3.5 w-3.5 mr-2" />
+            Initier Processus
           </Link>
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: "En attente", value: stats.pending, color: "bg-yellow-500" },
-          { label: "En cours", value: stats.running, color: "bg-blue-500" },
-          { label: "Terminés", value: stats.completed, color: "bg-green-500" },
-          { label: "Leads totals", value: stats.totalLeads.toLocaleString("fr-CA"), color: "bg-purple-500" },
+          { label: "EN ATTENTE", value: stats.pending, color: "border-yellow-500/50 text-yellow-500" },
+          { label: "EN COURS", value: stats.running, color: "border-blue-500/50 text-blue-500" },
+          { label: "TERMINÉS", value: stats.completed, color: "border-green-500/50 text-green-500" },
+          { label: "LEADS TOTAL", value: stats.totalLeads.toLocaleString("fr-CA"), color: "border-purple-500/50 text-purple-500" },
         ].map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="pt-6">
+          <Card key={stat.label} className="border-border/50 bg-card/50 shadow-none">
+            <CardContent className="pt-5 pb-5">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
+                <div className="flex flex-col gap-2">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{stat.label}</p>
+                  <p className="text-2xl font-mono tracking-tight">{stat.value}</p>
                 </div>
-                <div className={`w-2 h-8 rounded ${stat.color}`} />
+                <div className={`w-1 h-8 rounded-full border-r ${stat.color} opacity-50`} />
               </div>
             </CardContent>
           </Card>
@@ -97,53 +97,51 @@ export default async function ScrapingPage() {
       </div>
 
       {/* Jobs table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            Tâches de scraping
+      <Card className="border-border/50 bg-card/50 shadow-none">
+        <CardHeader className="border-b border-border/10 pb-3">
+          <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <Search className="h-3.5 w-3.5" />
+            Logs des Tâches
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {jobs.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground text-sm">Aucune tâche de scraping pour le moment</p>
-              <Button asChild className="mt-4">
-                <Link href="/scraping/nouveau">Créer une première tâche</Link>
+              <p className="text-muted-foreground font-mono text-sm">/ NO_JOBS_FOUND</p>
+              <Button asChild variant="outline" size="sm" className="mt-4 rounded-sm font-mono text-xs uppercase tracking-widest">
+                <Link href="/scraping/nouveau">Initier Processus</Link>
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-border/10">
               {jobs.map((job) => (
                 <div
                   key={job.id}
-                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       {getStatusIcon(job.status)}
-                      <div>
-                        <h4 className="font-medium text-sm">
-                          {job.keywords} ({SCRAPING_SOURCE_LABELS[job.source]})
+                      <div className="flex flex-col">
+                        <h4 className="font-mono font-medium text-sm text-foreground uppercase">
+                          {job.keywords} [{SCRAPING_SOURCE_LABELS[job.source]}]
                         </h4>
-                        <p className="text-xs text-muted-foreground">{job.location}</p>
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">{job.location}</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{job.totalScraped} leads</p>
-                      <p className="text-xs text-muted-foreground">
-                        {job.totalDupes > 0 && `${job.totalDupes} doublons`}
-                      </p>
+                  <div className="flex items-center gap-6">
+                    <div className="text-right font-mono">
+                      <p className="text-sm text-primary">{job.totalScraped} <span className="text-muted-foreground text-xs">LEADS</span></p>
+                      {job.totalDupes > 0 && <p className="text-[10px] text-muted-foreground">-{job.totalDupes} DUP</p>}
                     </div>
 
-                    <Badge className={getStatusColor(job.status)}>
+                    <Badge variant="outline" className={`font-mono text-[10px] uppercase tracking-widest rounded-sm ${getStatusColor(job.status)}`}>
                       {JOB_STATUS_LABELS[job.status]}
                     </Badge>
 
-                    <div className="text-right text-xs text-muted-foreground min-w-[120px]">
+                    <div className="text-right font-mono text-[10px] text-muted-foreground min-w-[120px] uppercase tracking-widest">
                       {job.createdAt && formatDateTime(job.createdAt)}
                     </div>
                   </div>

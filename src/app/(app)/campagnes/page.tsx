@@ -82,40 +82,38 @@ export default function CampaignsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Campagnes</h1>
-          <p className="text-muted-foreground mt-1">
-            Gérez vos campagnes email de prospection
+          <h1 className="text-2xl font-bold tracking-tight uppercase">CAMPAGNES</h1>
+          <p className="text-muted-foreground text-xs uppercase tracking-widest mt-1">
+            Gérez vos séquences B2B
           </p>
         </div>
         <Link
           href="/campagnes/nouvelle"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2 text-[10px] font-mono tracking-widest uppercase rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
         >
-          <Plus className="w-4 h-4" />
-          Nouvelle campagne
+          <Plus className="w-3.5 h-3.5" />
+          Initier Flux
         </Link>
       </div>
 
       {/* Campaigns list */}
       {campaigns.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 rounded-xl border bg-card">
-          <Mail className="w-12 h-12 text-muted-foreground/30 mb-4" />
-          <p className="font-medium text-muted-foreground">Aucune campagne</p>
-          <p className="text-sm text-muted-foreground/70 mt-1">
-            Créez votre première campagne email
-          </p>
+        <div className="flex flex-col items-center justify-center h-64 border border-border/50 bg-card/50 shadow-none">
+          <Mail className="w-8 h-8 text-muted-foreground/30 mb-4" />
+          <p className="font-mono text-sm tracking-widest uppercase text-muted-foreground">/ NO_DATA</p>
           <Link
             href="/campagnes/nouvelle"
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="mt-6 inline-flex items-center gap-2 px-4 py-2 text-[10px] font-mono tracking-widest uppercase rounded-sm border border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            Créer une campagne
+            <Plus className="w-3.5 h-3.5" />
+            Initier Flux
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="border border-border/50 bg-card/50 shadow-none">
+          <div className="divide-y divide-border/10">
           {campaigns.map((campaign) => {
             const sc = statusConfig[campaign.status] || statusConfig.BROUILLON;
             const StatusIcon = sc.icon;
@@ -129,32 +127,33 @@ export default function CampaignsPage() {
             return (
               <div
                 key={campaign.id}
-                className="rounded-xl border bg-card shadow-sm hover:shadow-md transition-shadow"
+                className="hover:bg-muted/50 transition-colors"
               >
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary/50" />
                         <Link
                           href={`/campagnes/${campaign.id}`}
-                          className="font-semibold hover:underline truncate"
+                          className="font-mono text-sm tracking-tight hover:underline truncate uppercase font-bold"
                         >
                           {campaign.name}
                         </Link>
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${sc.className}`}>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm text-[10px] font-mono tracking-widest uppercase border ${sc.className}`}>
                           <StatusIcon className="w-3 h-3" />
                           {sc.label}
                         </span>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1 truncate">
-                        Sujet: {campaign.subject}
+                      <p className="text-xs text-muted-foreground mt-1.5 truncate ml-4 tracking-wide">
+                        [SUJET] {campaign.subject}
                       </p>
                     </div>
 
                     {campaign.status === "BROUILLON" && (
                       <button
                         onClick={() => handleDelete(campaign.id)}
-                        className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        className="p-2 rounded-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -162,28 +161,29 @@ export default function CampaignsPage() {
                   </div>
 
                   {/* Stats bar */}
-                  <div className="flex items-center gap-6 mt-4 text-sm">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Users className="w-3.5 h-3.5" />
-                      <span>{campaign._count.campaignLeads} destinataires</span>
+                  <div className="flex items-center gap-6 mt-5 ml-4 font-mono text-[10px] tracking-widest uppercase text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="w-3 h-3 opacity-50" />
+                      <span>{campaign._count.campaignLeads} DB</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Send className="w-3.5 h-3.5" />
-                      <span>{campaign.totalSent} envoyés</span>
+                    <div className="flex items-center gap-1.5">
+                      <Send className="w-3 h-3 opacity-50" />
+                      <span>{campaign.totalSent} SENT</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>{openRate}% ouverture</span>
+                    <div className="flex items-center gap-1.5">
+                      <Eye className="w-3 h-3 opacity-50" />
+                      <span className={openRate > 0 ? "text-primary" : ""}>{openRate}% OP</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <MousePointerClick className="w-3.5 h-3.5" />
-                      <span>{clickRate}% clics</span>
+                    <div className="flex items-center gap-1.5">
+                      <MousePointerClick className="w-3 h-3 opacity-50" />
+                      <span className={clickRate > 0 ? "text-primary" : ""}>{clickRate}% CL</span>
                     </div>
                   </div>
                 </div>
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </div>

@@ -144,39 +144,39 @@ export default function NewCampaignPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 mb-8">
         <button
           onClick={() => router.push("/campagnes")}
-          className="p-2 rounded-lg hover:bg-accent transition-colors"
+          className="p-2 rounded-sm border border-border/50 hover:bg-muted/50 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Nouvelle campagne</h1>
-          <p className="text-muted-foreground mt-0.5 text-sm">
-            Créez et configurez votre campagne email
+          <h1 className="text-2xl font-bold tracking-tight uppercase">NOUVELLE CAMPAGNE</h1>
+          <p className="text-muted-foreground mt-0.5 text-[10px] tracking-widest uppercase font-mono">
+            Paramétrage du flux de communication
           </p>
         </div>
       </div>
 
       {/* Steps indicator */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-6">
         {STEPS.map((s, i) => {
           const StepIcon = s.icon;
           const isActive = i === step;
           const isDone = i < step;
 
           return (
-            <div key={i} className="flex items-center gap-2 flex-1">
+            <div key={i} className="flex items-center justify-center flex-1">
               <button
                 onClick={() => i < step && setStep(i)}
                 disabled={i > step}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full ${
+                className={`flex flex-col items-center justify-center gap-2 px-1 py-3 rounded-none border-b-2 font-mono text-[10px] uppercase tracking-widest transition-colors w-full ${
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "border-primary text-primary"
                     : isDone
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                    : "bg-muted text-muted-foreground"
+                    ? "border-emerald-500/50 text-emerald-500 hover:text-emerald-400"
+                    : "border-border/30 text-muted-foreground"
                 }`}
               >
                 {isDone ? (
@@ -184,7 +184,7 @@ export default function NewCampaignPage() {
                 ) : (
                   <StepIcon className="w-4 h-4 shrink-0" />
                 )}
-                <span className="hidden sm:inline truncate">{s.label}</span>
+                <span className="hidden sm:inline truncate mt-1">{s.label}</span>
               </button>
             </div>
           );
@@ -192,7 +192,7 @@ export default function NewCampaignPage() {
       </div>
 
       {/* Step content */}
-      <div className="rounded-xl border bg-card shadow-sm p-6">
+      <div className="border border-border/50 bg-card/50 shadow-none p-6">
         {/* Step 0: Name & Subject */}
         {step === 0 && (
           <div className="space-y-4">
@@ -391,11 +391,11 @@ export default function NewCampaignPage() {
       )}
 
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-8">
         <button
           onClick={() => setStep((s) => Math.max(0, s - 1))}
           disabled={step === 0}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border hover:bg-accent transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          className="inline-flex items-center gap-2 px-6 py-2.5 text-[10px] uppercase font-mono tracking-widest rounded-sm border border-border/50 hover:bg-accent transition-colors disabled:opacity-30 disabled:pointer-events-none"
         >
           <ArrowLeft className="w-4 h-4" />
           Précédent
@@ -405,7 +405,7 @@ export default function NewCampaignPage() {
           <button
             onClick={() => setStep((s) => s + 1)}
             disabled={!canAdvance()}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 disabled:pointer-events-none"
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-[10px] uppercase font-mono tracking-widest rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 disabled:pointer-events-none"
           >
             Suivant
             <ArrowRight className="w-4 h-4" />
@@ -414,14 +414,14 @@ export default function NewCampaignPage() {
           <button
             onClick={handleSubmit}
             disabled={submitting || !canAdvance()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50 disabled:pointer-events-none"
+            className="inline-flex items-center gap-2 px-8 py-2.5 text-[10px] uppercase font-mono tracking-widest rounded-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50 disabled:pointer-events-none"
           >
             {submitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Send className="w-4 h-4" />
             )}
-            Créer la campagne
+            Lancer Séquence
           </button>
         )}
       </div>

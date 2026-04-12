@@ -65,9 +65,9 @@ export function Header() {
     : "U";
 
   return (
-    <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center px-6 gap-4 sticky top-0 z-30">
+    <header className="h-14 border-b bg-background/95 supports-[backdrop-filter]:bg-background/60 backdrop-blur flex items-center px-6 gap-4 sticky top-0 z-30">
       <div className="flex-1">
-        <h2 className="text-base font-semibold">{title}</h2>
+        <h2 className="text-sm font-semibold tracking-tight uppercase text-muted-foreground">{title}</h2>
       </div>
 
       <div className="flex items-center gap-2">
