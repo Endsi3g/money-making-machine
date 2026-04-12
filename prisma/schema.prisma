@@ -1,0 +1,392 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// AUTH & WORKSPACE
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  memberships  WorkspaceMember[]
+  activityLogs ActivityLog[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members      WorkspaceMember[]
+  leads        Lead[]
+  scrapingJobs ScrapingJob[]
+  campaigns    Campaign[]
+  activityLogs ActivityLog[]
+  gmailTokens  GmailToken[]
+
+  @@index([slug])
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  AGENT
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(AGENT)
+  invitedAt   DateTime      @default(now())
+  joinedAt    DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+}
+
+model WorkspaceInvite {
+  id          String        @id @default(cuid())
+  workspaceId String
+  email       String
+  role        WorkspaceRole @default(AGENT)
+  token       String        @unique @default(cuid())
+  expiresAt   DateTime
+  createdAt   DateTime      @default(now())
+
+  @@unique([workspaceId, email])
+  @@index([token])
+}
+
+// ─────────────────────────────────────────────
+// LEADS
+// ─────────────────────────────────────────────
+
+enum LeadStatus {
+  NOUVEAU
+  ENRICHI
+  CONTACTE
+  REPONDU
+  CONVERTI
+  ARCHIVE
+}
+
+enum LeadSource {
+  PAGES_JAUNES
+  YELP
+  GOOGLE_MAPS
+  MANUEL
+  IMPORT
+}
+
+model Lead {
+  id          String @id @default(cuid())
+  workspaceId String
+
+  // Business info
+  businessName String
+  category     String?
+  description  String?  @db.Text
+  address      String?
+  city         String?
+  province     String?  @default("QC")
+  postalCode   String?
+  country      String?  @default("CA")
+  phone        String?
+  email        String?
+  website      String?
+
+  // Social media
+  facebook  String?
+  instagram String?
+  linkedin  String?
+  twitter   String?
+
+  // Source
+  source        LeadSource @default(MANUEL)
+  sourceUrl     String?
+  scrapingJobId String?
+
+  // Pipeline
+  status LeadStatus @default(NOUVEAU)
+  score  Int        @default(0)
+
+  // AI Enrichment
+  aiSummary         String?  @db.Text
+  aiPersonalization String?  @db.Text
+  emailExtracted    String?
+  enrichedAt        DateTime?
+
+  // Scraping metadata
+  rating       Float?
+  reviewCount  Int?
+  openingHours Json?
+  photos       String[]
+  tags         String[]
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  scrapingJob   ScrapingJob?   @relation(fields: [scrapingJobId], references: [id])
+  emailLogs     EmailLog[]
+  campaignLeads CampaignLead[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@index([workspaceId, source])
+  @@index([email])
+  @@index([businessName])
+}
+
+// ─────────────────────────────────────────────
+// SCRAPING
+// ─────────────────────────────────────────────
+
+enum ScrapingSource {
+  PAGES_JAUNES
+  YELP
+  GOOGLE_MAPS
+}
+
+enum JobStatus {
+  EN_ATTENTE
+  EN_COURS
+  TERMINE
+  ECHOUE
+  ANNULE
+}
+
+model ScrapingJob {
+  id          String         @id @default(cuid())
+  workspaceId String
+  source      ScrapingSource
+  status      JobStatus      @default(EN_ATTENTE)
+
+  keywords   String
+  location   String
+  maxResults Int            @default(100)
+
+  totalFound   Int @default(0)
+  totalScraped Int @default(0)
+  totalDupes   Int @default(0)
+
+  bullJobId    String?
+  errorMessage String?  @db.Text
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leads     Lead[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+}
+
+// ─────────────────────────────────────────────
+// EMAIL CAMPAIGNS
+// ─────────────────────────────────────────────
+
+enum CampaignStatus {
+  BROUILLON
+  PLANIFIE
+  EN_COURS
+  TERMINE
+  PAUSE
+}
+
+enum EmailStatus {
+  EN_ATTENTE
+  ENVOYE
+  DELIVRE
+  OUVERT
+  CLIQUE
+  REBONDI
+  DESINSCRIT
+  ECHOUE
+}
+
+model Campaign {
+  id          String @id @default(cuid())
+  workspaceId String
+  name        String
+  subject     String
+  bodyHtml    String @db.Text
+  bodyText    String? @db.Text
+
+  status      CampaignStatus @default(BROUILLON)
+  fromName    String?
+  fromEmail   String?
+  replyTo     String?
+  scheduledAt DateTime?
+
+  emailsPerHour Int @default(50)
+
+  totalRecipients   Int @default(0)
+  totalSent         Int @default(0)
+  totalDelivered    Int @default(0)
+  totalOpened       Int @default(0)
+  totalClicked      Int @default(0)
+  totalBounced      Int @default(0)
+  totalUnsubscribed Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaignLeads CampaignLead[]
+  emailLogs     EmailLog[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+}
+
+model CampaignLead {
+  id         String @id @default(cuid())
+  campaignId String
+  leadId     String
+
+  status        EmailStatus @default(EN_ATTENTE)
+  emailVerified Boolean     @default(false)
+
+  personalizedSubject String?
+  personalizedBody    String?  @db.Text
+
+  trackingId String   @unique @default(cuid())
+  sentAt     DateTime?
+  openedAt   DateTime?
+  clickedAt  DateTime?
+  bouncedAt  DateTime?
+
+  campaign  Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead      Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  emailLogs EmailLog[]
+
+  @@unique([campaignId, leadId])
+  @@index([campaignId])
+  @@index([leadId])
+  @@index([trackingId])
+}
+
+model EmailLog {
+  id             String  @id @default(cuid())
+  campaignId     String?
+  campaignLeadId String?
+  leadId         String?
+  workspaceId    String?
+
+  event    String
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  campaign     Campaign?     @relation(fields: [campaignId], references: [id])
+  campaignLead CampaignLead? @relation(fields: [campaignLeadId], references: [id])
+  lead         Lead?         @relation(fields: [leadId], references: [id])
+
+  @@index([campaignId])
+  @@index([campaignLeadId])
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────
+// GMAIL INTEGRATION
+// ─────────────────────────────────────────────
+
+model GmailToken {
+  id           String   @id @default(cuid())
+  workspaceId  String   @unique
+  email        String
+  accessToken  String   @db.Text
+  refreshToken String   @db.Text
+  expiresAt    DateTime
+  scope        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+// ─────────────────────────────────────────────
+// ACTIVITY LOG
+// ─────────────────────────────────────────────
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  action      String
+  entityType  String?
+  entityId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([workspaceId, createdAt])
+  @@index([entityType, entityId])
+}
