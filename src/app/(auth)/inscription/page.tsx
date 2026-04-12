@@ -85,13 +85,9 @@ export default function InscriptionPage() {
         variant="outline"
         className="w-full"
         onClick={handleGoogle}
-        disabled={googleLoading}
+        isLoading={googleLoading}
       >
-        {googleLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Chrome className="h-4 w-4" />
-        )}
+        {!googleLoading && <Chrome className="mr-2 h-4 w-4" />}
         Continuer avec Google
       </Button>
 
@@ -173,8 +169,7 @@ export default function InscriptionPage() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+        <Button type="submit" className="w-full" isLoading={loading}>
           Créer mon compte
         </Button>
       </form>

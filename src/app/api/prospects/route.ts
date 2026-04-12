@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, logActivity } from "@/lib/auth-helpers";
 import { z } from "zod";
 import { LeadSource, LeadStatus } from "@prisma/client";
+import { dispatchWebhook } from "@/lib/webhooks/webhook-dispatcher";
 
 const createLeadSchema = z.object({
   businessName: z.string().min(1, "Nom d'entreprise requis"),
@@ -105,6 +105,9 @@ export async function POST(req: NextRequest) {
     await logActivity(workspaceId, session.user.id, "LEAD_CREATED", "Lead", lead.id, {
       businessName: lead.businessName,
     });
+
+    // Envoyer le webhook
+    await dispatchWebhook("LEAD_CREATED", lead, workspaceId);
 
     return NextResponse.json(lead, { status: 201 });
   } catch (err) {

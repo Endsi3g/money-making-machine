@@ -2,26 +2,36 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+// ── Precision Badge — pill shape, caps label, semantic colors ──
+
 const badgeVariants = cva(
-  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors border-transparent shadow-[0_0_0_1px_rgba(34,42,53,0.08)]",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
+        // Dark pill
+        default:
+          "bg-[#242424] text-white hover:bg-[#242424]/90",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground hover:bg-black/5",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
-        outline: "text-foreground",
+          "bg-destructive/10 text-destructive shadow-none",
+        outline:
+          "bg-white text-muted-foreground hover:text-foreground",
+        // Status badges — muted colors
         success:
-          "border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+          "bg-emerald-50 text-emerald-600 shadow-none",
         warning:
-          "border-transparent bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-        info: "border-transparent bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+          "bg-amber-50 text-amber-600 shadow-none",
+        info:
+          "bg-blue-50 text-blue-600 shadow-none",
+        // Pure dot indicator
+        dot:
+          "bg-transparent text-muted-foreground gap-1.5 px-0 leading-none shadow-none",
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "outline",
     },
   }
 );
@@ -31,7 +41,9 @@ export interface BadgeProps
     VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
+  return (
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  );
 }
 
 export { Badge, badgeVariants };

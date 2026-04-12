@@ -5,9 +5,13 @@ import { z } from "zod";
 
 const createCampaignSchema = z.object({
   name: z.string().min(1, "Nom de campagne requis"),
+  type: z.enum(["STANDARD", "A_B"]).default("STANDARD"),
   subject: z.string().min(1, "Sujet requis"),
   bodyHtml: z.string().min(1, "Corps du message requis"),
+  subjectB: z.string().optional(),
+  bodyHtmlB: z.string().optional(),
   bodyText: z.string().optional(),
+  bodyTextB: z.string().optional(),
   fromName: z.string().optional(),
   fromEmail: z.string().email().optional(),
   replyTo: z.string().email().optional(),
@@ -83,9 +87,11 @@ export async function POST(req: NextRequest) {
       });
 
       await prisma.campaignLead.createMany({
-        data: leads.map((lead) => ({
+        data: leads.map((lead, index) => ({
           campaignId: campaign.id,
           leadId: lead.id,
+          // Répartition 50/50 pour l'A/B testing simple
+          variation: campaign.type === "A_B" ? (index % 2 === 0 ? "A" : "B") : "A",
         })),
         skipDuplicates: true,
       });

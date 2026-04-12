@@ -1,6 +1,7 @@
-import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
@@ -36,4 +37,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry configuration options
+const sentryOptions = {
+  // Silent avoids console output during build
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Masquer les avertissements de source map manquante en dev
+  hideSourceMaps: true,
+  disableLogger: true,
+};
+
+export default withSentryConfig(nextConfig, sentryOptions);

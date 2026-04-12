@@ -8,8 +8,16 @@ import { GoogleMapsScraper } from "@/lib/scrapers/google-maps-scraper";
 import type { ScrapingJobData } from "@/lib/queues/scraping-queue";
 import type { EnrichmentJobData } from "@/lib/queues/enrichment-queue";
 import { processEnrichmentJob } from "@/lib/workers/enrichment-worker";
-import type { EmailJobData } from "@/lib/queues/email-queue";
+import { EmailJobData } from "@/lib/queues/email-queue";
 import { processEmailJob } from "@/lib/workers/email-worker";
+import * as Sentry from "@sentry/nextjs";
+
+// Initialiser Sentry pour le worker
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  tracesSampleRate: 1.0,
+});
 
 const redisConnection = createRedisClient();
 
@@ -116,8 +124,16 @@ const scrapingWorker = new Worker<ScrapingJobData>(
 
       console.log(`[Worker] Job ${jobId} completed: ${totalScraped} leads, ${totalDupes} dupes`);
       pub.disconnect();
+      throw error;
     } catch (error) {
       console.error(`[Worker] Job ${jobId} failed:`, error);
+      
+      // Capturer l'erreur dans Sentry
+      Sentry.captureException(error, {
+        extra: { jobId, workspaceId, source, keywords, location },
+        tags: { jobType: "scraping", source },
+      });
+
       pub.disconnect();
 
       await prisma.scrapingJob.update({

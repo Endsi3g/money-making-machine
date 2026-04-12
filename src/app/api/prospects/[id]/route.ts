@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, logActivity } from "@/lib/auth-helpers";
-import { z } from "zod";
 import { LeadStatus } from "@prisma/client";
+import { dispatchWebhook } from "@/lib/webhooks/webhook-dispatcher";
 
 const updateLeadSchema = z.object({
   businessName: z.string().min(1).optional(),
@@ -74,6 +74,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     await logActivity(session.user.workspaceId!, session.user.id, "LEAD_UPDATED", "Lead", lead.id, {
       businessName: lead.businessName,
     });
+
+    // Envoyer le webhook
+    await dispatchWebhook("LEAD_UPDATED", lead, session.user.workspaceId!);
 
     return NextResponse.json(lead);
   } catch (err) {

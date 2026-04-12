@@ -1,82 +1,130 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { Zap } from "lucide-react";
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
+  // Wrap in try/catch: a stale JWT cookie causes JWEDecryptionFailed which
+  // would crash the layout before reaching the redirect, creating an infinite
+  // loading loop. Treating decryption failures as "no session" breaks the loop.
+  let session;
+  try {
+    session = await getServerSession(authOptions);
+  } catch {
+    session = null;
+  }
 
   if (session) {
     redirect("/tableau-de-bord");
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left panel - Branding */}
-      <div className="hidden lg:flex flex-col justify-between p-12 bg-slate-950 text-white relative overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20" />
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+    <div className="min-h-screen grid lg:grid-cols-[1fr_480px] bg-background">
+
+      {/* ── Left panel — Luxury brand statement ── */}
+      <div className="hidden lg:flex flex-col justify-between p-16 bg-card relative overflow-hidden border-r border-border">
+
+        {/* Decorative grid overlay */}
+        <div className="absolute inset-0 opacity-[0.025] auth-grid-bg" />
+
+        {/* Minimal gradient orb */}
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] opacity-[0.03] auth-orb-bg" />
+
+        {/* Corner accent lines */}
+        <span className="absolute top-8 left-8 w-12 h-12 border-t border-l border-border" />
+        <span className="absolute bottom-8 right-8 w-12 h-12 border-b border-r border-border" />
 
         {/* Logo */}
-        <div className="relative flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <span className="text-white font-bold text-lg">M</span>
+        <div className="relative flex items-center gap-4 z-10">
+          <div className="relative w-10 h-10 flex items-center justify-center bg-white shadow-cal-1 rounded-md">
+            <Zap className="w-5 h-5 text-[#242424]" strokeWidth={2} />
           </div>
-          <span className="font-bold text-xl tracking-tight">Money Making Machine</span>
+          <div>
+            <div
+              className="text-sm font-bold tracking-tight text-[#242424] leading-none"
+            >
+              Aura B2B
+            </div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mt-1">
+              Prospection
+            </div>
+          </div>
         </div>
 
-        {/* Feature highlights */}
-        <div className="relative space-y-8">
+        {/* Headline */}
+        <div className="relative z-10 space-y-8">
           <div>
-            <h1 className="text-4xl font-bold leading-tight text-white mb-4">
-              Trouvez vos prochains clients en pilote automatique
+            <h1
+              className="text-5xl font-bold leading-[1.05] tracking-[-0.04em] text-[#242424]"
+            >
+              Trouvez vos<br />
+              prochains clients<br />
+              en automatique.
             </h1>
-            <p className="text-slate-400 text-lg leading-relaxed">
-              Scrapage automatisé, enrichissement IA, emails ultra-personnalisés. Un écosystème complet pour développer votre agence.
+            <p className="text-muted-foreground text-sm leading-relaxed mt-6 max-w-sm">
+              Scrapage, enrichissement IA, emails ultra-personnalisés.
+              Un seul cockpit pour toute la prospection B2B.
             </p>
           </div>
 
-          <div className="space-y-4">
+          {/* Feature list — minimal */}
+          <div className="space-y-3">
             {[
-              { icon: "🎯", text: "Scrapage Pages Jaunes, Yelp et Google Maps" },
-              { icon: "🤖", text: "Enrichissement IA avec Claude" },
-              { icon: "📧", text: "Campagnes email personnalisées via Gmail" },
-              { icon: "👥", text: "Collaboration en équipe" },
-            ].map((feature) => (
-              <div key={feature.text} className="flex items-center gap-3">
-                <span className="text-xl">{feature.icon}</span>
-                <span className="text-slate-300 text-sm">{feature.text}</span>
+              { code: "01", label: "Extraction multi-sources automatisée" },
+              { code: "02", label: "Enrichissement Ollama local" },
+              { code: "03", label: "Campagnes email via Gmail" },
+              { code: "04", label: "Collaboration d'équipe" },
+            ].map((f) => (
+              <div key={f.code} className="flex items-center gap-4">
+                <span
+                  className="text-[10px] font-mono text-primary/60 tabular-nums"
+                >
+                  {f.code}
+                </span>
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[11px] text-muted-foreground tracking-tight">
+                  {f.label}
+                </span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="relative grid grid-cols-3 gap-6">
+        {/* Bottom stats */}
+        <div className="relative z-10 flex items-center gap-8">
           {[
-            { value: "100%", label: "Gratuit" },
-            { value: "3", label: "Sources de leads" },
-            { value: "IA", label: "Personnalisation" },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="text-2xl font-bold text-white">{stat.value}</div>
-              <div className="text-xs text-slate-500 mt-1">{stat.label}</div>
+            { value: "100%", label: "Local-first" },
+            { value: "3+",   label: "Sources leads" },
+            { value: "IA",   label: "Personnalisation" },
+          ].map((s) => (
+            <div key={s.label}>
+              <div className="text-xl font-semibold text-[#242424] tracking-tight">
+                {s.value}
+              </div>
+              <div className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.16em] mt-0.5">
+                {s.label}
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Right panel - Form */}
-      <div className="flex items-center justify-center p-8">
-        <div className="w-full max-w-[400px]">
+      {/* ── Right panel — Form ── */}
+      <div className="flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-[360px]">
+
           {/* Mobile logo */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-              <span className="text-white font-bold">M</span>
+          <div className="flex items-center gap-3 mb-12 lg:hidden">
+            <div className="w-8 h-8 flex items-center justify-center bg-white shadow-cal-1 rounded-md">
+              <Zap className="w-4 h-4 text-[#242424]" />
             </div>
-            <span className="font-bold text-lg">Money Making Machine</span>
+            <span
+              className="text-sm font-bold tracking-tight text-[#242424] uppercase"
+            >
+              Aura B2B
+            </span>
           </div>
+
           {children}
         </div>
       </div>

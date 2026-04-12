@@ -76,6 +76,15 @@ model Workspace {
   campaigns    Campaign[]
   activityLogs ActivityLog[]
   gmailTokens  GmailToken[]
+  webhooks     Webhook[]
+  savedFilters SavedFilter[]
+  apiKeys      ApiKey[]
+  smsLogs      SmsLog[]
+
+  // Twilio Settings
+  twilioAccountSid String?
+  twilioAuthToken  String? // À déchiffrer au runtime si nécessaire
+  twilioFromNumber String?
 
   @@index([slug])
 }
@@ -206,6 +215,7 @@ model Lead {
   scrapingJob   ScrapingJob?   @relation(fields: [scrapingJobId], references: [id])
   emailLogs     EmailLog[]
   campaignLeads CampaignLead[]
+  smsLogs       SmsLog[]
 
   @@index([workspaceId])
   @@index([workspaceId, status])
@@ -315,6 +325,12 @@ model Campaign {
   campaignLeads CampaignLead[]
   emailLogs     EmailLog[]
 
+  // A/B Testing
+  abVariantSubject  String?
+  abVariantBodyHtml String? @db.Text
+  abSplitPercent    Int?    @default(50)
+  abWinnerVariant   String? // "A" ou "B"
+
   @@index([workspaceId])
   @@index([workspaceId, status])
 }
@@ -339,6 +355,9 @@ model CampaignLead {
   campaign  Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   lead      Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
   emailLogs EmailLog[]
+
+  // A/B Testing
+  abVariant    String? // "A" ou "B"
 
   @@unique([campaignId, leadId])
   @@index([campaignId])
@@ -407,4 +426,84 @@ model ActivityLog {
 
   @@index([workspaceId, createdAt])
   @@index([entityType, entityId])
+}
+
+// ─────────────────────────────────────────────
+// WEBHOOKS
+// ─────────────────────────────────────────────
+
+model Webhook {
+  id              String   @id @default(cuid())
+  workspaceId     String
+  name            String
+  url             String
+  secret          String   // Pour signature HMAC
+  events          String[] // ex: ["LEAD_CREATED", "CAMPAIGN_SENT"]
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  lastTriggeredAt DateTime?
+  lastStatus      Int?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+// ─────────────────────────────────────────────
+// SAVED FILTERS
+// ─────────────────────────────────────────────
+
+model SavedFilter {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  filters     Json     // { status, source, city, search, ... }
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+// ─────────────────────────────────────────────
+// SMS (TWILIO)
+// ─────────────────────────────────────────────
+
+model SmsLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  leadId      String
+  to          String
+  body        String
+  status      String   // queued, sent, delivered, failed
+  twilioSid   String?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([leadId])
+}
+
+// ─────────────────────────────────────────────
+// API KEYS
+// ─────────────────────────────────────────────
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  keyHash     String   @unique
+  keyPrefix   String
+  scopes      String[] // ex: ["leads:read"]
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+  @@index([workspaceId])
 }

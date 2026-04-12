@@ -14,7 +14,13 @@ import {
   Send,
   Search,
   X,
+  Zap,
+  Split,
+  Layers,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 interface Lead {
   id: string;
@@ -41,8 +47,11 @@ export default function NewCampaignPage() {
 
   // Form data
   const [name, setName] = useState("");
+  const [type, setType] = useState<"STANDARD" | "A_B">("STANDARD");
   const [subject, setSubject] = useState("");
+  const [subjectB, setSubjectB] = useState("");
   const [bodyHtml, setBodyHtml] = useState(DEFAULT_TEMPLATE);
+  const [bodyHtmlB, setBodyHtmlB] = useState(DEFAULT_TEMPLATE);
   const [fromName, setFromName] = useState("");
   const [fromEmail, setFromEmail] = useState("");
   const [replyTo, setReplyTo] = useState("");
@@ -100,8 +109,17 @@ export default function NewCampaignPage() {
   }
 
   function canAdvance(): boolean {
-    if (step === 0) return name.trim().length > 0 && subject.trim().length > 0;
-    if (step === 1) return bodyHtml.trim().length > 0;
+    if (step === 0) {
+      if (!name.trim()) return false;
+      if (!subject.trim()) return false;
+      if (type === "A_B" && !subjectB.trim()) return false;
+      return true;
+    }
+    if (step === 1) {
+      if (!bodyHtml.trim()) return false;
+      if (type === "A_B" && !bodyHtmlB.trim()) return false;
+      return true;
+    }
     if (step === 2) return selectedIds.size > 0;
     return true;
   }
@@ -116,8 +134,11 @@ export default function NewCampaignPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
+          type,
           subject,
+          subjectB: type === "A_B" ? subjectB : undefined,
           bodyHtml,
+          bodyHtmlB: type === "A_B" ? bodyHtmlB : undefined,
           fromName: fromName || undefined,
           fromEmail: fromEmail || undefined,
           replyTo: replyTo || undefined,
@@ -195,54 +216,113 @@ export default function NewCampaignPage() {
       <div className="border border-border/50 bg-card/50 shadow-none p-6">
         {/* Step 0: Name & Subject */}
         {step === 0 && (
-          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1.5">Nom de la campagne</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Prospection paysagistes Montréal"
-                className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
-                Sujet de l&apos;email
-                <span className="text-muted-foreground font-normal ml-1">(supporte les variables)</span>
+              <label className="block text-sm font-medium mb-1.5 font-mono uppercase tracking-tighter text-[11px] text-zinc-500">
+                Format de campagne
               </label>
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="Ex: {{businessName}} — une idée pour votre site web"
-                className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Variables: {"{{businessName}}"}, {"{{firstName}}"}, {"{{city}}"}, {"{{category}}"}
-              </p>
+              <div className="flex items-center gap-4 p-4 rounded-lg border border-zinc-800 bg-zinc-950/50">
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Split className="w-4 h-4 text-emerald-500" />
+                    <span className="text-sm font-bold uppercase tracking-tight">Activer l&apos;A/B testing</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 leading-relaxed uppercase tracking-widest">
+                    Séparez vos prospects en deux groupes pour tester deux approches différentes.
+                  </p>
+                </div>
+                <Switch 
+                  checked={type === "A_B"}
+                  onCheckedChange={(checked) => setType(checked ? "A_B" : "STANDARD")}
+                />
+              </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={type === "A_B" ? "border-l-2 border-emerald-500 pl-4 py-2" : ""}>
+                <label className="block text-xs font-bold mb-1.5 uppercase tracking-tighter text-zinc-400">
+                  Sujet {type === "A_B" && "Variante A"}
+                </label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Ex: {{businessName}} — une idée pour votre site web"
+                  className="w-full px-3 py-2 rounded border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-zinc-500 transition-colors"
+                />
+              </div>
+
+              {type === "A_B" && (
+                <div className="border-l-2 border-amber-500 pl-4 py-2">
+                  <label className="block text-xs font-bold mb-1.5 uppercase tracking-tighter text-zinc-400 font-mono">
+                    Sujet Variante B
+                  </label>
+                  <input
+                    type="text"
+                    value={subjectB}
+                    onChange={(e) => setSubjectB(e.target.value)}
+                    placeholder="Ex: Question rapide pour {{businessName}}"
+                    className="w-full px-3 py-2 rounded border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-zinc-500 transition-colors"
+                  />
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1.5 uppercase font-mono tracking-widest">
+              Variables: {"{{businessName}}"}, {"{{firstName}}"}, {"{{city}}"}, {"{{category}}"}
+            </p>
           </div>
         )}
 
         {/* Step 1: Body */}
         {step === 1 && (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
-                Corps du message (HTML)
-                <span className="text-muted-foreground font-normal ml-1">(supporte Handlebars)</span>
-              </label>
-              <textarea
-                value={bodyHtml}
-                onChange={(e) => setBodyHtml(e.target.value)}
-                rows={16}
-                className="w-full px-3 py-2 rounded-lg border bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-y"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Variables disponibles: {"{{businessName}}"}, {"{{firstName}}"}, {"{{city}}"}, {"{{category}}"}, {"{{aiPersonalization}}"}, {"{{email}}"}, {"{{phone}}"}, {"{{rating}}"}
-              </p>
-            </div>
+            {type === "STANDARD" ? (
+              <div>
+                <label className="block text-sm font-medium mb-1.5 font-mono uppercase tracking-widest text-[11px] text-zinc-500">
+                  Corps du message (HTML)
+                </label>
+                <textarea
+                  value={bodyHtml}
+                  onChange={(e) => setBodyHtml(e.target.value)}
+                  rows={14}
+                  className="w-full px-4 py-3 rounded border border-zinc-800 bg-zinc-950 font-mono text-xs focus:ring-1 focus:ring-zinc-500 transition-all resize-none shadow-inner"
+                />
+              </div>
+            ) : (
+              <Tabs defaultValue="variantA" className="w-full">
+                <TabsList className="grid w-64 grid-cols-2 bg-zinc-900 h-9 p-1">
+                  <TabsTrigger value="variantA" className="text-[10px] uppercase tracking-widest font-bold data-[state=active]:bg-emerald-600 data-[state=active]:text-white transition-all">Version A</TabsTrigger>
+                  <TabsTrigger value="variantB" className="text-[10px] uppercase tracking-widest font-bold data-[state=active]:bg-amber-600 data-[state=active]:text-white transition-all">Version B</TabsTrigger>
+                </TabsList>
+                <TabsContent value="variantA" className="mt-4 space-y-4">
+                  <div className="p-3 bg-emerald-950/10 border border-emerald-900/30 rounded text-[10px] text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                    <Layers className="w-3 h-3" />
+                    Édition de la variante principale (A)
+                  </div>
+                  <textarea
+                    value={bodyHtml}
+                    onChange={(e) => setBodyHtml(e.target.value)}
+                    rows={14}
+                    className="w-full px-4 py-3 rounded border border-zinc-800 bg-zinc-950 font-mono text-xs focus:ring-1 focus:ring-emerald-500 transition-all resize-none shadow-inner"
+                  />
+                </TabsContent>
+                <TabsContent value="variantB" className="mt-4 space-y-4">
+                   <div className="p-3 bg-amber-950/10 border border-amber-900/30 rounded text-[10px] text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                    <Layers className="w-3 h-3" />
+                    Édition de la variante de test (B)
+                  </div>
+                  <textarea
+                    value={bodyHtmlB}
+                    onChange={(e) => setBodyHtmlB(e.target.value)}
+                    rows={14}
+                    className="w-full px-4 py-3 rounded border border-zinc-800 bg-zinc-950 font-mono text-xs focus:ring-1 focus:ring-amber-500 transition-all resize-none shadow-inner"
+                  />
+                </TabsContent>
+              </Tabs>
+            )}
+            
+            <p className="text-[10px] text-muted-foreground mt-1.5 uppercase font-mono tracking-widest bg-zinc-900/30 p-2 border border-zinc-800 rounded">
+              Variables disponibles: {"{{businessName}}"}, {"{{firstName}}"}, {"{{city}}"}, {"{{category}}"}, {"{{aiPersonalization}}"}
+            </p>
           </div>
         )}
 

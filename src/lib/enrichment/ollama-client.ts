@@ -93,7 +93,7 @@ ${lead.websiteText ? lead.websiteText.substring(0, 4000) : "Site web inaccessibl
   });
 
   if (!response.ok) {
-    throw new Error(\`[OLLAMA] Erreur API \${response.status}: \${response.statusText}\`);
+    throw new Error("[OLLAMA] Erreur API " + response.status + ": " + response.statusText);
   }
 
   const data = await response.json();
@@ -101,10 +101,10 @@ ${lead.websiteText ? lead.websiteText.substring(0, 4000) : "Site web inaccessibl
 
   let parsed: OllamaEnrichmentResult;
   try {
-    const raw = content.replace(/^\\s*\`\`\`(?:json)?\\n?/i, "").replace(/\\n?\`\`\`\\s*$/i, "").trim();
+    const raw = content.replace(/^\s*```(?:json)?\n?/i, "").replace(/\n?```\s*$/i, "").trim();
     parsed = JSON.parse(raw);
   } catch (err) {
-    throw new Error(\`[OLLAMA] JSON parse failed. Raw: \${content}\`);
+    throw new Error(`[OLLAMA] JSON parse failed. Raw: ${content}`);
   }
 
   // Fallback compliance checking

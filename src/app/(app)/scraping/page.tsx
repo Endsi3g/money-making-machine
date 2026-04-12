@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Plus, Search, Loader2, CheckCircle, AlertCircle, Clock } from "lucide-react";
@@ -8,6 +7,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/utils";
 import { JOB_STATUS_LABELS, SCRAPING_SOURCE_LABELS } from "@/types/scraping";
+import { PageMotion, FadeItem } from "@/components/shared/page-motion";
 
 export default async function ScrapingPage() {
   const session = await getServerSession(authOptions);
@@ -20,137 +20,152 @@ export default async function ScrapingPage() {
   });
 
   const stats = {
-    pending: jobs.filter((j) => j.status === "EN_ATTENTE").length,
-    running: jobs.filter((j) => j.status === "EN_COURS").length,
-    completed: jobs.filter((j) => j.status === "TERMINE").length,
-    totalLeads: jobs.reduce((sum, j) => sum + j.totalFound, 0),
+    pending: jobs.filter((j: any) => j.status === "EN_ATTENTE").length,
+    running: jobs.filter((j: any) => j.status === "EN_COURS").length,
+    completed: jobs.filter((j: any) => j.status === "TERMINE").length,
+    totalLeads: jobs.reduce((sum: number, j: any) => sum + j.totalFound, 0),
   };
 
   function getStatusIcon(status: string) {
     switch (status) {
       case "EN_ATTENTE":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-primary" strokeWidth={1.5} />;
       case "EN_COURS":
-        return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
+        return <Loader2 className="h-4 w-4 text-amber-500 animate-spin" strokeWidth={1.5} />;
       case "TERMINE":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-emerald-500" strokeWidth={1.5} />;
       case "ECHOUE":
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <AlertCircle className="h-4 w-4 text-destructive" strokeWidth={1.5} />;
       default:
         return null;
     }
   }
 
-  function getStatusColor(status: string) {
+  function getStatusBadgeVariant(status: string): "default" | "info" | "warning" | "success" | "destructive" | "outline" {
     switch (status) {
-      case "EN_ATTENTE":
-        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300";
-      case "EN_COURS":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300";
-      case "TERMINE":
-        return "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300";
-      case "ECHOUE":
-        return "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
-      default:
-        return "";
+      case "EN_ATTENTE": return "info";
+      case "EN_COURS":   return "warning";
+      case "TERMINE":    return "success";
+      case "ECHOUE":     return "destructive";
+      default:           return "outline";
     }
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight uppercase">SCRAPING JOBS</h1>
-          <p className="text-muted-foreground text-xs uppercase tracking-widest mt-1">
-            / {stats.totalLeads.toLocaleString("fr-CA")} LEADS EXTRAITS
-          </p>
-        </div>
-        <Button asChild className="rounded-sm font-mono text-[10px] uppercase tracking-widest">
-          <Link href="/scraping/nouveau">
-            <Plus className="h-3.5 w-3.5 mr-2" />
-            Initier Processus
-          </Link>
-        </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {[
-          { label: "EN ATTENTE", value: stats.pending, color: "border-yellow-500/50 text-yellow-500" },
-          { label: "EN COURS", value: stats.running, color: "border-blue-500/50 text-blue-500" },
-          { label: "TERMINÉS", value: stats.completed, color: "border-green-500/50 text-green-500" },
-          { label: "LEADS TOTAL", value: stats.totalLeads.toLocaleString("fr-CA"), color: "border-purple-500/50 text-purple-500" },
-        ].map((stat) => (
-          <Card key={stat.label} className="border-border/50 bg-card/50 shadow-none">
-            <CardContent className="pt-5 pb-5">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-2">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{stat.label}</p>
-                  <p className="text-2xl font-mono tracking-tight">{stat.value}</p>
-                </div>
-                <div className={`w-1 h-8 rounded-full border-r ${stat.color} opacity-50`} />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Jobs table */}
-      <Card className="border-border/50 bg-card/50 shadow-none">
-        <CardHeader className="border-b border-border/10 pb-3">
-          <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-            <Search className="h-3.5 w-3.5" />
-            Logs des Tâches
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {jobs.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground font-mono text-sm">/ NO_JOBS_FOUND</p>
-              <Button asChild variant="outline" size="sm" className="mt-4 rounded-sm font-mono text-xs uppercase tracking-widest">
-                <Link href="/scraping/nouveau">Initier Processus</Link>
-              </Button>
+    <PageMotion>
+      <div className="space-y-8">
+        {/* Header */}
+        <FadeItem>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-8">
+            <div>
+              <h1 className="text-4xl font-semibold tracking-tight text-[#242424] leading-none mb-3">
+                Scraping Jobs
+              </h1>
+              <p className="text-sm text-muted-foreground font-medium">
+                {stats.totalLeads.toLocaleString("fr-CA")} Leads extraits
+              </p>
             </div>
-          ) : (
-            <div className="divide-y divide-border/10">
-              {jobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
+            <Button size="sm" asChild id="btn-new-scraping">
+              <Link href="/scraping/nouveau">
+                <Plus className="h-3.5 w-3.5" />
+                Initier Processus
+              </Link>
+            </Button>
+          </div>
+        </FadeItem>
+
+        {/* Stats grid */}
+        <FadeItem>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[
+              { label: "En Attente", value: stats.pending, id: "stat-pending" },
+              { label: "En Cours", value: stats.running, id: "stat-running" },
+              { label: "Terminés", value: stats.completed, id: "stat-completed" },
+              { label: "Leads extraits", value: stats.totalLeads.toLocaleString("fr-CA"), id: "stat-total" },
+            ].map((stat) => (
+              <div key={stat.id} id={stat.id} className="bg-white p-6 rounded-xl shadow-cal-2">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {stat.label}
+                </div>
+                <div className="text-3xl font-bold tracking-tight text-[#242424] leading-none">
+                  {stat.value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </FadeItem>
+
+        {/* Jobs list */}
+        <FadeItem>
+          <div className="bg-white rounded-xl shadow-cal-2 overflow-hidden mb-12">
+            <div className="px-6 py-4 border-b border-border bg-gray-50/50">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                Journal d&apos;exécution
+              </h3>
+            </div>
+            
+            <div className="divide-y divide-border/50">
+              {jobs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-48" id="empty-state-scraping">
+                  <p className="text-xs font-mono tracking-widest uppercase text-muted-foreground/50">
+                    / System_idle
+                  </p>
+                  <Button asChild variant="outline" size="sm" className="mt-4 rounded-sm">
+                    <Link href="/scraping/nouveau">Lancer un extracteur</Link>
+                  </Button>
+                </div>
+              ) : (
+                jobs.map((job: any) => (
+                  <div
+                    key={job.id}
+                    className="flex items-center justify-between px-6 py-5 hover:bg-black/5 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
                       {getStatusIcon(job.status)}
-                      <div className="flex flex-col">
-                        <h4 className="font-mono font-medium text-sm text-foreground uppercase">
-                          {job.keywords} [{SCRAPING_SOURCE_LABELS[job.source]}]
+                      <div>
+                        <h4 className="text-sm font-semibold text-[#242424] tracking-tight">
+                          {job.keywords}{" "}
+                          <span className="text-muted-foreground ml-2 font-medium">
+                            [{SCRAPING_SOURCE_LABELS[job.source]}]
+                          </span>
                         </h4>
-                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">{job.location}</p>
+                        <p className="text-xs font-medium text-muted-foreground mt-1">
+                          {job.location}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-8">
+                      <div className="text-right flex flex-col items-end">
+                        <div className="flex items-center gap-1.5 font-mono text-sm group">
+                          <span className="text-foreground">{job.totalScraped}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Leads</span>
+                        </div>
+                        {job.totalDupes > 0 && (
+                          <p className="text-[10px] text-muted-foreground/60 font-mono">
+                            -{job.totalDupes} dup
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="w-24 text-right">
+                        <Badge variant={getStatusBadgeVariant(job.status)}>
+                          {JOB_STATUS_LABELS[job.status]}
+                        </Badge>
+                      </div>
+
+                      <div className="text-right font-mono text-[10px] text-muted-foreground/60 min-w-[120px] tracking-wide">
+                        {job.createdAt && formatDateTime(job.createdAt)}
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-6">
-                    <div className="text-right font-mono">
-                      <p className="text-sm text-primary">{job.totalScraped} <span className="text-muted-foreground text-xs">LEADS</span></p>
-                      {job.totalDupes > 0 && <p className="text-[10px] text-muted-foreground">-{job.totalDupes} DUP</p>}
-                    </div>
-
-                    <Badge variant="outline" className={`font-mono text-[10px] uppercase tracking-widest rounded-sm ${getStatusColor(job.status)}`}>
-                      {JOB_STATUS_LABELS[job.status]}
-                    </Badge>
-
-                    <div className="text-right font-mono text-[10px] text-muted-foreground min-w-[120px] uppercase tracking-widest">
-                      {job.createdAt && formatDateTime(job.createdAt)}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        </FadeItem>
+      </div>
+    </PageMotion>
   );
 }

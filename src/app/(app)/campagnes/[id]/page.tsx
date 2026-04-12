@@ -141,6 +141,8 @@ export default function CampaignDetailPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push("/campagnes")}
+            aria-label="Retour aux campagnes"
+            title="Retour aux campagnes"
             className="p-2 rounded-lg hover:bg-accent transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

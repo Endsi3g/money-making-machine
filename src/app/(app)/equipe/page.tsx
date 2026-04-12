@@ -211,7 +211,9 @@ export default function TeamPage() {
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                aria-label="Rôle du membre invité"
+                title="Rôle"
+                className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
               >
                 <option value="AGENT">Agent</option>
                 <option value="ADMIN">Administrateur</option>
@@ -278,7 +280,9 @@ export default function TeamPage() {
                     <select
                       value={member.role}
                       onChange={(e) => handleChangeRole(member.id, e.target.value)}
-                      className="text-xs px-2 py-1 rounded border bg-background"
+                      aria-label={`Rôle de ${member.user.name || member.user.email}`}
+                      title="Modifier le rôle"
+                      className="text-xs px-2 py-1.5 rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
                     >
                       <option value="AGENT">Agent</option>
                       <option value="ADMIN">Admin</option>

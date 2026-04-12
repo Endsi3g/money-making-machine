@@ -21,12 +21,16 @@ import {
 import { formatDate } from "@/lib/utils";
 import { PipelineFunnel } from "@/components/dashboard/pipeline-funnel";
 import { SourceBreakdown } from "@/components/dashboard/source-breakdown";
+import { PageMotion, FadeItem } from "@/components/shared/page-motion";
+
+export const metadata = {
+  title: "Cockpit",
+};
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   const workspaceId = session?.user?.workspaceId;
 
-  // Fetch all stats in parallel
   const [
     leadStats,
     sourceStats,
@@ -80,301 +84,393 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const totalLeads = leadStats.reduce((sum, s) => sum + s._count.id, 0);
-  const enrichedLeads = leadStats.find((s) => s.status === "ENRICHI")?._count.id || 0;
+  const totalLeads     = leadStats.reduce((sum, s) => sum + s._count.id, 0);
+  const enrichedLeads  = leadStats.find((s) => s.status === "ENRICHI")?._count.id  || 0;
   const contactedLeads = leadStats.find((s) => s.status === "CONTACTE")?._count.id || 0;
   const convertedLeads = leadStats.find((s) => s.status === "CONVERTI")?._count.id || 0;
-  const newLeads = leadStats.find((s) => s.status === "NOUVEAU")?._count.id || 0;
-  const repliedLeads = leadStats.find((s) => s.status === "REPONDU")?._count.id || 0;
+  const newLeads       = leadStats.find((s) => s.status === "NOUVEAU")?._count.id  || 0;
+  const repliedLeads   = leadStats.find((s) => s.status === "REPONDU")?._count.id  || 0;
 
   const runningScrapingJobs = scrapingStats.find((s) => s.status === "EN_COURS")?._count.id || 0;
-  const activeCampaigns = campaignStats.find((s) => s.status === "EN_COURS")?._count.id || 0;
+  const activeCampaigns     = campaignStats.find((s) => s.status === "EN_COURS")?._count.id || 0;
 
-  const totalSent = campaignTotals._sum.totalSent || 0;
-  const totalOpened = campaignTotals._sum.totalOpened || 0;
+  const totalSent    = campaignTotals._sum.totalSent    || 0;
+  const totalOpened  = campaignTotals._sum.totalOpened  || 0;
   const totalClicked = campaignTotals._sum.totalClicked || 0;
-  const openRate = totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0;
-  const clickRate = totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0;
+  const openRate     = totalSent > 0 ? Math.round((totalOpened  / totalSent) * 100) : 0;
+  const clickRate    = totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0;
 
-  // Pipeline data for chart
   const pipelineData = [
-    { name: "Nouveau", value: newLeads, color: "#6366f1" },
-    { name: "Enrichi", value: enrichedLeads, color: "#8b5cf6" },
-    { name: "Contacté", value: contactedLeads, color: "#f59e0b" },
-    { name: "Répondu", value: repliedLeads, color: "#10b981" },
-    { name: "Converti", value: convertedLeads, color: "#22c55e" },
+    { name: "Nouveau",  value: newLeads,       color: "hsl(215 14% 34%)" },
+    { name: "Enrichi",  value: enrichedLeads,  color: "hsl(188 70% 38%)" },
+    { name: "Contacté", value: contactedLeads, color: "hsl(188 100% 52%)" },
+    { name: "Répondu",  value: repliedLeads,   color: "hsl(158 64% 52%)" },
+    { name: "Converti", value: convertedLeads, color: "hsl(142 76% 48%)" },
   ];
 
-  // Source data for chart
   const sourceData = sourceStats.map((s) => ({
     name: s.source.replace("_", " "),
     value: s._count.id,
   }));
 
+  const kpiStats = [
+    {
+      label: "BASE TOTALE",
+      value: totalLeads.toLocaleString("fr-CA"),
+      icon: Users,
+      sub: null,
+      id: "kpi-total",
+    },
+    {
+      label: "ENRICHIS IA",
+      value: enrichedLeads.toLocaleString("fr-CA"),
+      icon: Sparkles,
+      sub: totalLeads > 0 ? `${Math.round((enrichedLeads / totalLeads) * 100)}% de la base` : null,
+      id: "kpi-enriched",
+    },
+    {
+      label: "EMAILS ENVOYÉS",
+      value: totalSent.toLocaleString("fr-CA"),
+      icon: Mail,
+      sub: totalSent > 0 ? `${openRate}% ouverture` : null,
+      id: "kpi-sent",
+    },
+    {
+      label: "CONVERSIONS",
+      value: convertedLeads.toLocaleString("fr-CA"),
+      icon: TrendingUp,
+      sub: totalLeads > 0 ? `${Math.round((convertedLeads / totalLeads) * 100)}% taux` : null,
+      id: "kpi-converted",
+      highlight: true,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">COCKPIT</h1>
-          <p className="text-muted-foreground text-xs uppercase tracking-widest mt-1">
-            Vue d&apos;ensemble de l&apos;écosystème
-          </p>
+    <PageMotion>
+      {/* ── Page header ── */}
+      <FadeItem>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-12">
+          <div>
+            <h1 className="text-4xl font-semibold tracking-tight text-[#242424] leading-none mb-3">
+              Cockpit
+            </h1>
+            <p className="text-sm text-muted-foreground font-medium">
+              Vue d&apos;ensemble de l&apos;écosystème
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="outline" size="sm" asChild id="btn-new-scraping">
+              <Link href="/scraping/nouveau">
+                <Search className="h-4 w-4" />
+                Scraping
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild id="btn-new-campaign">
+              <Link href="/campagnes/nouvelle">
+                <Mail className="h-4 w-4" />
+                Campagne
+              </Link>
+            </Button>
+            <Button size="sm" asChild id="btn-new-prospect">
+              <Link href="/prospects/nouveau">
+                <Plus className="h-4 w-4" />
+                Prospect
+              </Link>
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="font-mono text-xs uppercase tracking-wider" asChild>
-            <Link href="/scraping/nouveau">
-              <Search className="h-3 w-3 mr-2" />
-              Scraping
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" className="font-mono text-xs uppercase tracking-wider" asChild>
-            <Link href="/campagnes/nouvelle">
-              <Mail className="h-3 w-3 mr-2" />
-              Campagne
-            </Link>
-          </Button>
-          <Button size="sm" className="font-mono text-xs uppercase tracking-wider" asChild>
-            <Link href="/prospects">
-              <Plus className="h-3 w-3 mr-2" />
-              Prospect
-            </Link>
-          </Button>
-        </div>
-      </div>
+      </FadeItem>
 
-      {/* Main stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "BASE TOTALE", value: totalLeads.toLocaleString("fr-CA"), icon: Users, sub: null },
-          { label: "ENRICHIS (IA)", value: enrichedLeads.toLocaleString("fr-CA"), icon: Sparkles, sub: null },
-          { label: "EMAILS ENVOYÉS", value: totalSent.toLocaleString("fr-CA"), icon: Mail, sub: totalSent > 0 ? `${openRate}% open` : null },
-          { label: "CONVERSIONS", value: convertedLeads.toLocaleString("fr-CA"), icon: TrendingUp, sub: totalLeads > 0 ? `${Math.round((convertedLeads / totalLeads) * 100)}% taux` : null },
-        ].map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.label} className="border-border/50 bg-card/50 hover:bg-card/80 transition-colors">
-              <CardContent className="pt-6">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <p className="text-[10px] font-medium tracking-widest uppercase">{stat.label}</p>
-                    <Icon className="h-4 w-4 opacity-50" />
-                  </div>
-                  <p className="text-3xl font-mono tracking-tight">{stat.value}</p>
-                  {stat.sub && (
-                    <p className="text-[10px] text-muted-foreground font-mono tracking-wider">{stat.sub}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Campaign performance row */}
-      {totalSent > 0 && (
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: "TAUX D'OUVERTURE", value: `${openRate}%`, icon: Eye, color: "text-amber-500" },
-            { label: "TAUX DE CLICS", value: `${clickRate}%`, icon: MousePointerClick, color: "text-purple-500" },
-            { label: "CAMPAGNES ACTIVES", value: activeCampaigns.toString(), icon: Mail, color: "text-blue-500" },
-          ].map((stat) => {
+      {/* ── KPI Stats ── */}
+      <FadeItem>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {kpiStats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.label} className="border-border/50 bg-card/50">
-                <CardContent className="pt-5 pb-5">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg bg-muted/50 ${stat.color}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-xl font-mono font-bold">{stat.value}</p>
-                      <p className="text-[9px] text-muted-foreground tracking-widest uppercase">{stat.label}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div
+                key={stat.label}
+                id={stat.id}
+                className="bg-white p-6 rounded-xl shadow-cal-2 group hover:shadow-cal-3 transition-shadow duration-300"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {stat.label}
+                  </span>
+                  <Icon
+                    className="h-5 w-5 text-muted-foreground/50"
+                    strokeWidth={2}
+                  />
+                </div>
+                <div className="text-3xl font-bold tracking-tight text-[#242424] leading-none mb-2">
+                  {stat.value}
+                </div>
+                {stat.sub && (
+                  <p className="text-sm text-muted-foreground mt-2 font-medium">
+                    {stat.sub}
+                  </p>
+                )}
+              </div>
             );
           })}
         </div>
+      </FadeItem>
+
+      {/* ── Campaign performance ── */}
+      {totalSent > 0 && (
+        <FadeItem>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            {[
+              {
+                label: "TAUX D'OUVERTURE",
+                value: `${openRate}%`,
+                icon: Eye,
+                id: "kpi-open-rate",
+              },
+              {
+                label: "TAUX DE CLICS",
+                value: `${clickRate}%`,
+                icon: MousePointerClick,
+                id: "kpi-click-rate",
+              },
+              {
+                label: "CAMPAGNES ACTIVES",
+                value: activeCampaigns.toString(),
+                icon: Mail,
+                id: "kpi-active-campaigns",
+              },
+            ].map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={stat.label}
+                  id={stat.id}
+                  className="bg-white p-5 rounded-xl shadow-cal-2 flex items-center gap-5"
+                >
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                    <Icon className="w-5 h-5 text-[#242424]" strokeWidth={2} />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold tracking-tight text-[#242424]">
+                      {stat.value}
+                    </div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-widest font-semibold mt-1">
+                      {stat.label}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </FadeItem>
       )}
 
-      {/* Charts row */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader className="pb-3 border-b border-border/10">
-            <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <BarChart3 className="h-3.5 w-3.5" />
-              Pipeline de conversion
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <PipelineFunnel data={pipelineData} />
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader className="pb-3 border-b border-border/10">
-            <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <Search className="h-3.5 w-3.5" />
-              Sources de leads
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <SourceBreakdown data={sourceData} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Active activities + recent leads */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        {/* Scraping + Campaigns status */}
-        <div className="space-y-4">
-          <Card className="border-border/50 bg-card/50">
-            <CardHeader className="pb-3 border-b border-border/10">
-              <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <Search className="h-3.5 w-3.5" />
-                Scraping
+      {/* ── Charts ── */}
+      <FadeItem>
+        <div className="grid lg:grid-cols-2 gap-6 mb-12">
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                Pipeline de conversion
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-4 space-y-4">
-              {runningScrapingJobs > 0 ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Tâches Actives</span>
-                    <Badge variant="outline" className="font-mono">{runningScrapingJobs}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Extraction en direct. Monitorer la progression système.
-                  </p>
-                </>
-              ) : (
-                <div className="flex flex-col items-start gap-4">
-                  <p className="text-sm text-muted-foreground">Système en veille.</p>
-                  <Button variant="default" size="sm" className="font-mono text-xs uppercase tracking-wider" asChild>
-                    <Link href="/scraping/nouveau">
-                      <Search className="h-3 w-3 mr-2" />
-                      Initier Scraping
-                    </Link>
-                  </Button>
-                </div>
-              )}
+            <CardContent>
+              <PipelineFunnel data={pipelineData} />
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 bg-card/50">
-            <CardHeader className="pb-3 border-b border-border/10">
-              <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <Mail className="h-3.5 w-3.5" />
-                Campagnes
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                Sources de leads
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-4 space-y-4">
-              {activeCampaigns > 0 ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Flux d&apos;envoi actif</span>
-                    <Badge variant="outline" className="font-mono">{activeCampaigns}</Badge>
+            <CardContent>
+              <SourceBreakdown data={sourceData} />
+            </CardContent>
+          </Card>
+        </div>
+      </FadeItem>
+
+      {/* ── Status + Activity ── */}
+      <FadeItem>
+        <div className="grid lg:grid-cols-2 gap-6 mb-12">
+          {/* Scraping & Campaigns */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  Scraping
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {runningScrapingJobs > 0 ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#242424] font-medium">Tâches actives</span>
+                      <Badge variant="info" id="scraping-count">{runningScrapingJobs}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Extraction en direct. Surveiller la progression système.
+                    </p>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-start gap-4">
+                    <p className="text-sm text-muted-foreground">Système en veille.</p>
+                    <Button size="sm" asChild id="btn-start-scraping">
+                      <Link href="/scraping/nouveau">
+                        <Search className="h-4 w-4" />
+                        Initier Scraping
+                      </Link>
+                    </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Gmail en fonctionnement. Envois espacés en cours.
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  Campagnes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {activeCampaigns > 0 ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#242424] font-medium">Flux d&apos;envoi actif</span>
+                      <Badge variant="success" id="campaigns-count">{activeCampaigns}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Gmail en fonctionnement. Envois espacés en cours.
+                    </p>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-start gap-4">
+                    <p className="text-sm text-muted-foreground">Aucun flux actif.</p>
+                    <Button variant="outline" size="sm" asChild id="btn-start-campaign">
+                      <Link href="/campagnes/nouvelle">
+                        <Mail className="h-4 w-4" />
+                        Lancer Campagne
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent activity */}
+          <Card id="recent-activity">
+            <CardHeader className="pb-4 flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-muted-foreground" />
+                Activité récente
+              </CardTitle>
+              <Link
+                href="/parametres/activite"
+                className="text-xs font-semibold text-muted-foreground hover:text-[#242424] transition-colors"
+              >
+                Tout voir
+              </Link>
+            </CardHeader>
+            <CardContent className="p-0">
+              {recentActivity.length === 0 ? (
+                <div className="flex items-center justify-center py-10">
+                  <p className="text-sm text-muted-foreground/50 font-mono">
+                    / NO_ACTIVITY
                   </p>
-                </>
+                </div>
               ) : (
-                <div className="flex flex-col items-start gap-4">
-                  <p className="text-sm text-muted-foreground">Aucun flux actif.</p>
-                  <Button variant="outline" size="sm" className="font-mono text-xs uppercase tracking-wider" asChild>
-                    <Link href="/campagnes/nouvelle">
-                      <Mail className="h-3 w-3 mr-2" />
-                      Lancer Campagne
-                    </Link>
-                  </Button>
+                <div>
+                  {recentActivity.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-center gap-4 px-6 py-4 border-b border-border/50 last:border-0 hover:bg-black/5 transition-colors"
+                    >
+                      <div className="w-2 h-2 bg-[#242424] rounded-full shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm truncate">
+                          <span className="font-semibold text-[#242424]">
+                            {log.user.name || log.user.email}
+                          </span>
+                          <span className="text-muted-foreground ml-2">
+                            {log.action.toLowerCase().replace(/_/g, " ")}
+                          </span>
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(log.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
+      </FadeItem>
 
-        {/* Recent activity */}
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader className="border-b border-border/10 pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <Activity className="h-3.5 w-3.5" />
-              Activité récente
-            </CardTitle>
-            <Link href="/parametres/activite" className="text-[10px] text-primary hover:underline uppercase tracking-wider">
-              Tout voir
+      {/* ── Recent leads ── */}
+      <FadeItem>
+        <Card id="recent-leads" className="mb-12">
+          <CardHeader className="pb-4 flex flex-row items-center justify-between">
+            <CardTitle>Base de données — Entrées récentes</CardTitle>
+            <Link
+              href="/prospects"
+              className="text-xs font-semibold text-muted-foreground hover:text-[#242424] transition-colors flex items-center gap-1"
+            >
+              Voir tout
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </CardHeader>
           <CardContent className="p-0">
-            {recentActivity.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground font-mono">/ NO_ACTIVITY</p>
+            {recentLeads.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-sm text-muted-foreground/50 font-mono">
+                  / NO_DATA
+                </p>
               </div>
             ) : (
-              <div className="divide-y divide-border/10">
-                {recentActivity.map((log) => (
-                  <div key={log.id} className="flex items-center gap-3 px-4 py-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary/50 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs truncate">
-                        <span className="font-medium">{log.user.name || log.user.email}</span>
-                        <span className="text-muted-foreground ml-1">{log.action.toLowerCase().replace(/_/g, " ")}</span>
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(log.createdAt)}</p>
+              <div>
+                {recentLeads.map((lead) => (
+                  <Link
+                    key={lead.id}
+                    href={`/prospects/${lead.id}`}
+                    className="flex items-center justify-between px-6 py-4 border-b border-border/50 last:border-0 hover:bg-black/5 transition-colors group"
+                    id={`lead-row-${lead.id}`}
+                  >
+                    <div className="flex-1 min-w-0 flex items-center gap-4">
+                      <div className="w-2 h-2 bg-muted group-hover:bg-[#242424] rounded-full shrink-0 transition-colors" />
+                      <div>
+                        <p className="font-bold text-sm text-[#242424] truncate">
+                          {lead.businessName}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {lead.city && `${lead.city} · `}
+                          {formatDate(lead.createdAt)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                    <div className="flex items-center gap-4">
+                      <Badge variant="outline" className="px-3">{lead.status}</Badge>
+                      {lead.score > 0 && (
+                        <span className="text-xs font-mono font-semibold text-[#242424] tabular-nums">
+                          {lead.score} pts
+                        </span>
+                      )}
+                      <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-[#242424] group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </Link>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Recent leads */}
-      <Card className="border-border/50 bg-card/50">
-        <CardHeader className="border-b border-border/10 pb-4">
-          <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground">Base de données: Entrées récentes</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {recentLeads.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-muted-foreground font-mono">/ NO_DATA</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border/10">
-              {recentLeads.map((lead) => (
-                <Link
-                  key={lead.id}
-                  href={`/prospects/${lead.id}`}
-                  className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors group"
-                >
-                  <div className="flex-1 min-w-0 flex items-center gap-4">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary/50 group-hover:bg-primary transition-colors" />
-                    <div>
-                      <p className="font-mono font-medium text-sm text-foreground truncate">
-                        {lead.businessName}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1 tracking-wide">
-                        {lead.city && `${lead.city} // `}
-                        {formatDate(lead.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="text-[10px] font-mono">
-                      {lead.status}
-                    </Badge>
-                    {lead.score > 0 && (
-                      <span className="text-xs font-mono text-muted-foreground">{lead.score}pts</span>
-                    )}
-                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      </FadeItem>
+    </PageMotion>
   );
 }

@@ -80,9 +80,15 @@ export async function processEmailJob(job: Job<EmailJobData>): Promise<void> {
   // 4. Render template
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
   const variables = buildVariables(lead);
+
+  // Déterminer les templates à utiliser selon la variation A/B
+  const variation = campaignLead.variation || "A";
+  const targetSubject = (variation === "B" && campaign.subjectB) ? campaign.subjectB : campaign.subject;
+  const targetHtml = (variation === "B" && campaign.bodyHtmlB) ? campaign.bodyHtmlB : campaign.bodyHtml;
+
   const { subject, html } = prepareEmail(
-    campaign.subject,
-    campaign.bodyHtml,
+    targetSubject,
+    targetHtml,
     variables,
     campaignLead.trackingId,
     baseUrl
