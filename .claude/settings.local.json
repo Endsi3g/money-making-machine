@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npm run:*)",
+      "Bash(gh release create v0.4.0 --title 'v0.4.0 — Phase 4: AI Enrichment' --notes ':*)"
+    ]
+  }
+}

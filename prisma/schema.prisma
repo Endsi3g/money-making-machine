@@ -166,11 +166,29 @@ model Lead {
   status LeadStatus @default(NOUVEAU)
   score  Int        @default(0)
 
-  // AI Enrichment
-  aiSummary         String?  @db.Text
-  aiPersonalization String?  @db.Text
-  emailExtracted    String?
-  enrichedAt        DateTime?
+  // AI Enrichment & Agent
+  aiSummary              String?  @db.Text
+  aiPersonalization      String?  @db.Text
+  emailExtracted         String?
+  enrichedAt             DateTime?
+
+  // Heuristic Scores (B2B Ollama)
+  fitScore               Int?
+  urgencyScore           Int?
+  webGapScore            Int?
+  seoGapScore            Int?
+  contentMaturityScore   Int?
+  digitalAiMaturityScore Int?
+  contactabilityScore    Int?
+  reputationSignalScore  Int?
+  personalizationConfidenceScore Int?
+
+  // Generated Outputs & Compliance
+  suggestedAngle         String?  @db.Text
+  suggestedOffer         String?  @db.Text
+  draftEmail             String?  @db.Text
+  complianceFlags        String[]
+  requiresHumanReview    Boolean  @default(false)
 
   // Scraping metadata
   rating       Float?

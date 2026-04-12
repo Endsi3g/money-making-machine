@@ -39,6 +39,7 @@ const scrapingWorker = new Worker<ScrapingJobData>(
     }
 
     const dedup = new Deduplicator(workspaceId);
+    const pub = createRedisClient(); // single pub client for the whole job
     let totalScraped = 0;
     let totalDupes = 0;
 
@@ -89,7 +90,6 @@ const scrapingWorker = new Worker<ScrapingJobData>(
         });
 
         // Publish progress via Redis pub/sub
-        const pub = createRedisClient();
         await pub.publish(
           `scraping:${jobId}`,
           JSON.stringify({
@@ -100,7 +100,6 @@ const scrapingWorker = new Worker<ScrapingJobData>(
             lastLead: { businessName: lead.businessName, city: lead.city },
           })
         );
-        pub.disconnect();
       }
 
       // Mark as complete
@@ -116,8 +115,10 @@ const scrapingWorker = new Worker<ScrapingJobData>(
       });
 
       console.log(`[Worker] Job ${jobId} completed: ${totalScraped} leads, ${totalDupes} dupes`);
+      pub.disconnect();
     } catch (error) {
       console.error(`[Worker] Job ${jobId} failed:`, error);
+      pub.disconnect();
 
       await prisma.scrapingJob.update({
         where: { id: jobId },

@@ -240,32 +240,76 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
             </TabsContent>
 
             <TabsContent value="ai" className="mt-4">
-              {lead.aiSummary ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-blue-500" />
-                      Analyse IA
-                    </CardTitle>
-                    {lead.enrichedAt && (
-                      <p className="text-xs text-muted-foreground">
-                        Enrichi le {formatDateTime(lead.enrichedAt)}
-                      </p>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm leading-relaxed">{lead.aiSummary}</p>
+              {lead.aiSummary || lead.fitScore ? (
+                <div className="space-y-4">
+                  <Card className="border-border/50 bg-card/50 shadow-none">
+                    <CardHeader className="border-b border-border/10 pb-3">
+                      <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Analyse Business & Conformité
+                      </CardTitle>
+                      {lead.enrichedAt && (
+                        <p className="text-[10px] text-muted-foreground font-mono mt-1">
+                          ÉVALUÉ LE : {formatDateTime(lead.enrichedAt).toUpperCase()}
+                        </p>
+                      )}
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-4">
+                      {lead.requiresHumanReview && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-sm text-sm flex items-center gap-2">
+                          <span className="font-bold">REVIEW_REQUIRED</span> : Ce profil nécessite une validation humaine (Compliance).
+                        </div>
+                      )}
 
-                    {lead.aiPersonalization && (
-                      <div className="mt-4 pt-4 border-t">
-                        <h4 className="text-sm font-medium mb-2">Données de personnalisation</h4>
-                        <pre className="text-xs bg-muted p-3 rounded-lg overflow-auto">
-                          {JSON.stringify(JSON.parse(lead.aiPersonalization), null, 2)}
+                      {lead.complianceFlags && lead.complianceFlags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {lead.complianceFlags.map(flag => (
+                            <Badge key={flag} variant="destructive" className="font-mono text-[9px]">
+                              {flag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {lead.aiSummary && (
+                        <div>
+                          <h4 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Résumé Agent</h4>
+                          <p className="text-sm leading-relaxed">{lead.aiSummary}</p>
+                        </div>
+                      )}
+
+                      {(lead.suggestedAngle || lead.suggestedOffer) && (
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/10">
+                          {lead.suggestedAngle && (
+                            <div>
+                              <h4 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Angle Commercial</h4>
+                              <p className="text-sm">{lead.suggestedAngle}</p>
+                            </div>
+                          )}
+                          {lead.suggestedOffer && (
+                            <div>
+                              <h4 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Offre Recommandée</h4>
+                              <p className="text-sm">{lead.suggestedOffer}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {lead.draftEmail && (
+                    <Card className="border-border/50 bg-card/50 shadow-none">
+                      <CardHeader className="border-b border-border/10 pb-3">
+                        <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground">Draft Email Suggéré</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <pre className="text-sm font-sans bg-muted/50 p-4 rounded-sm border border-border/50 whitespace-pre-wrap">
+                          {lead.draftEmail}
                         </pre>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <Sparkles className="h-8 w-8 text-muted-foreground mb-3" />
@@ -321,13 +365,31 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         <div className="space-y-4">
           <Card className="border-border/50 bg-card/50 shadow-none">
             <CardHeader className="border-b border-border/10 pb-3">
-              <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground">Fit Score</CardTitle>
+              <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground">Scores Heuristiques</CardTitle>
             </CardHeader>
-            <CardContent>
-              <LeadScoreIndicator score={lead.score} showLabel className="justify-center" />
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                Basé sur la complétude des données et l&apos;enrichissement IA
-              </p>
+            <CardContent className="pt-4 space-y-4">
+              <div>
+                <p className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase mb-2 text-center">Score Global (Index)</p>
+                <LeadScoreIndicator score={lead.score} showLabel className="justify-center" />
+              </div>
+              
+              {(lead.fitScore !== null || lead.urgencyScore !== null) && (
+                <div className="pt-4 border-t border-border/10 space-y-3">
+                   {[
+                     { label: "FIT SCORE", val: lead.fitScore },
+                     { label: "URGENCE", val: lead.urgencyScore },
+                     { label: "SEOGAP", val: lead.seoGapScore },
+                     { label: "WEBGAP", val: lead.webGapScore },
+                     { label: "CONTACT", val: lead.contactabilityScore },
+                     { label: "AI MATURITY", val: lead.digitalAiMaturityScore },
+                   ].filter(s => s.val !== null).map(s => (
+                     <div key={s.label} className="flex items-center justify-between">
+                       <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-widest">{s.label}</span>
+                       <span className="text-xs font-mono font-bold">{s.val}/100</span>
+                     </div>
+                   ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 

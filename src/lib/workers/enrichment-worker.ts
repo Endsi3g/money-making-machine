@@ -1,7 +1,7 @@
 import type { Job } from "bullmq";
 import { prisma } from "@/lib/prisma";
 import { analyzeWebsite } from "@/lib/enrichment/website-analyzer";
-import { enrichLead } from "@/lib/enrichment/claude-client";
+import { enrichLeadWithOllama } from "@/lib/enrichment/ollama-client";
 import { scoreLead } from "@/lib/enrichment/lead-scorer";
 import type { EnrichmentJobData } from "@/lib/queues/enrichment-queue";
 
@@ -31,8 +31,8 @@ export async function processEnrichmentJob(job: Job<EnrichmentJobData>): Promise
     }
   }
 
-  // AI enrichment via Claude
-  const enrichmentResult = await enrichLead({
+  // AI enrichment via local Ollama
+  const enrichmentResult = await enrichLeadWithOllama({
     businessName: lead.businessName,
     category: lead.category,
     city: lead.city,
@@ -40,28 +40,45 @@ export async function processEnrichmentJob(job: Job<EnrichmentJobData>): Promise
     websiteText,
     rating: lead.rating,
     reviewCount: lead.reviewCount,
+    phone: lead.phone,
+    email: lead.email || emailExtracted,
   });
 
-  // Compute deterministic score
-  const score = scoreLead({
-    email: lead.email,
-    emailExtracted,
-    website: lead.website,
-    phone: lead.phone,
-    aiSummary: enrichmentResult.aiSummary,
-    rating: lead.rating,
-  });
+  // Calculate generic score dynamically based on Ollama sub-scores (0-100 scale)
+  const aggregatedScore = Math.round(
+    (enrichmentResult.fitScore +
+      enrichmentResult.urgencyScore +
+      enrichmentResult.contactabilityScore) / 3
+  );
 
   // Persist results
   await prisma.lead.update({
     where: { id: leadId },
     data: {
       aiSummary: enrichmentResult.aiSummary,
-      aiPersonalization: enrichmentResult.aiPersonalization,
+      aiPersonalization: "Ollama ne génère pas la string old format", // legacy field fallback
       emailExtracted,
       enrichedAt: new Date(),
-      score,
+      score: aggregatedScore,
       status: "ENRICHI",
+      
+      // New Ollama metrics
+      fitScore: enrichmentResult.fitScore,
+      urgencyScore: enrichmentResult.urgencyScore,
+      webGapScore: enrichmentResult.webGapScore,
+      seoGapScore: enrichmentResult.seoGapScore,
+      contentMaturityScore: enrichmentResult.contentMaturityScore,
+      digitalAiMaturityScore: enrichmentResult.digitalAiMaturityScore,
+      contactabilityScore: enrichmentResult.contactabilityScore,
+      reputationSignalScore: enrichmentResult.reputationSignalScore,
+      personalizationConfidenceScore: enrichmentResult.personalizationConfidenceScore,
+      
+      // Outputs & flags
+      suggestedAngle: enrichmentResult.suggestedAngle,
+      suggestedOffer: enrichmentResult.suggestedOffer,
+      draftEmail: enrichmentResult.draftEmail,
+      complianceFlags: enrichmentResult.complianceFlags,
+      requiresHumanReview: enrichmentResult.requiresHumanReview,
     },
   });
 
