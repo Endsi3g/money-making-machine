@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth-helpers";
+import { requireAuth, logActivity } from "@/lib/auth-helpers";
 import { z } from "zod";
 import { LeadSource, LeadStatus } from "@prisma/client";
 
@@ -100,6 +100,10 @@ export async function POST(req: NextRequest) {
         email: parsed.data.email || null,
         website: parsed.data.website || null,
       },
+    });
+
+    await logActivity(workspaceId, session.user.id, "LEAD_CREATED", "Lead", lead.id, {
+      businessName: lead.businessName,
     });
 
     return NextResponse.json(lead, { status: 201 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth-helpers";
+import { requireAuth, logActivity } from "@/lib/auth-helpers";
 import { z } from "zod";
 import { LeadStatus } from "@prisma/client";
 
@@ -71,6 +71,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       data: parsed.data,
     });
 
+    await logActivity(session.user.workspaceId!, session.user.id, "LEAD_UPDATED", "Lead", lead.id, {
+      businessName: lead.businessName,
+    });
+
     return NextResponse.json(lead);
   } catch (err) {
     console.error("[LEAD_UPDATE]", err);
@@ -91,6 +95,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 
   await prisma.lead.delete({ where: { id: params.id } });
+
+  await logActivity(session.user.workspaceId!, session.user.id, "LEAD_DELETED", "Lead", params.id, {
+    businessName: existing.businessName,
+  });
 
   return NextResponse.json({ success: true });
 }
