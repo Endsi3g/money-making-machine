@@ -328,7 +328,7 @@ curl -X POST http://localhost:3000/api/prospects/[id]/enrich
 | 4 (Enrichment) | 2-3 days | ✅ Done |
 | 5 (Email) | 3-4 days | ✅ Done |
 | 6 (Team) | 1-2 days | ✅ Done |
-| 7 (Polish) | 2-3 days | 🔄 Next |
+| 7 (Polish) | 2-3 days | ✅ Done |
 | **Total** | **~17-20 days** | |
 
 ---
