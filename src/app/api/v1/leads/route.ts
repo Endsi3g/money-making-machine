@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateApiKey } from "@/lib/api-auth";
 
 /**
  * API Publique V1 - Lecture des prospects.
@@ -7,7 +8,7 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(req: NextRequest) {
   try {
-    const workspaceId = req.headers.get("X-Workspace-Id");
+    const workspaceId = await validateApiKey(req);
 
     if (!workspaceId) {
       return NextResponse.json({ error: "Clé API manquante ou invalide" }, { status: 401 });
